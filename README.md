@@ -1,4 +1,4 @@
-# Vibe Content Engine v0.4.2 — بدون AI
+# Vibe Content Engine v0.5.0 — Batch Content Factory بدون AI
 
 این نسخه موتور محتوای Vibe را با معماری **Rules-only** اجرا می‌کند. هیچ Gemini، OpenAI یا LLM در مسیر Import/Prepare وجود ندارد.
 
@@ -170,3 +170,56 @@ npx wrangler secret put PIXABAY_API_KEY
 - همه درخواست های خارجی Worker با User-Agent مشخص VibeContentEngine ارسال می شوند.
 - برای Wikisource و Wikimedia Commons هدر Api-User-Agent هم ارسال می شود.
 - هدف: جلوگیری از 403 ناشی از Client ناشناس و سازگاری بهتر با محدودیت های Wikimedia.
+
+
+## v0.5.0 — Batch Content Factory
+
+نسخه 0.5 موتور را از جستجوی تک به تک به کارخانه محتوای Batch تبدیل می‌کند.
+
+### جریان اصلی
+Topics → Search all compatible sources → Resolve → Rules → Validate → Deduplicate → Pack
+
+### ورودی Batch
+- صدها موضوع به صورت Paste
+- Upload فایل TXT / CSV / JSON
+- سهم جدا برای هر موضوع:
+  - Text
+  - Image
+  - Video
+  - Podcast
+  - Music
+- انتخاب زبان آموزشی و زبان رابط
+- Safe license filter
+- امکان نگه داشتن مواردی که مجوزشان نیازمند Review نهایی است
+- فیلتر اختیاری زبان منبع
+
+### خروجی
+موتور فقط Vibeهای کامل را وارد خروجی اصلی می‌کند و موارد ناقص، تکراری و خطادار را جداگانه در آمار نگه می‌دارد.
+
+ساختار ZIP:
+
+```text
+Vibe-Pack/
+├── manifest.json
+├── report.json
+├── licenses.json
+├── json/
+│   ├── text/
+│   ├── image/
+│   ├── video/
+│   ├── podcast/
+│   └── music/
+├── text/<id>/item.json + text.txt
+├── image/<id>/item.json + image.*
+├── video/<id>/item.json + video.* + poster.* + subtitle.*
+├── podcast/<id>/item.json + audio.* + transcript.txt
+└── music/<id>/item.json + audio.* + cover.*
+```
+
+برای هر آیتم، JSON استاندارد Vibe شامل Topic، عنوان، توضیح، Category، Language، License، Source، Keywordها، زمان مطالعه/مدت، Media URL و وضعیت حقوقی است.
+
+### دانلود مدیا
+مسیر `/api/proxy` فقط دامنه‌های Whitelist شده منابع متصل را Proxy می‌کند تا مرورگر بتواند فایل‌های واقعی را داخل ZIP قرار دهد. Proxy عمومی و آزاد نیست.
+
+### نکته حجم
+Pack کامل برای Batchهای خیلی بزرگ ممکن است سنگین باشد. UI علاوه بر Pack کامل، ZIP جدا برای Text / Image / Video / Podcast / Music می‌دهد.
