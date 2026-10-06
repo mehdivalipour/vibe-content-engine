@@ -3,7 +3,7 @@ const JSON_HEADERS = {
   'cache-control': 'no-store',
 };
 
-const SOURCE_USER_AGENT = 'VibeContentEngine/0.6.1 (https://speakme.ir/)';
+const SOURCE_USER_AGENT = 'VibeContentEngine/0.6.2 (https://speakme.ir/)';
 
 function withSourceHeaders(url, options = {}) {
   const headers = new Headers(options.headers || {});
@@ -27,7 +27,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
-      if (url.pathname === '/api/health') return json({ ok: true, version: '0.6.1', now: new Date().toISOString() });
+      if (url.pathname === '/api/health') return json({ ok: true, version: '0.6.2', now: new Date().toISOString() });
       if (url.pathname === '/api/sources') return json({ sources: sourceRegistry(env) });
       if (url.pathname === '/api/proxy' && request.method === 'GET') return handleProxy(url, ctx);
       if (url.pathname === '/api/search') return handleSearch(url, env, ctx);
@@ -630,6 +630,13 @@ async function handleProxy(url, ctx) {
 
   if (!response.ok) {
     return json({ error: `Download upstream ${response.status}` }, 502);
+  }
+
+  const maxBytes = clampInt(url.searchParams.get('max_bytes'), 0, 250 * 1024 * 1024, 0);
+  const upstreamLength = Number(response.headers.get('content-length') || 0);
+  if (maxBytes && upstreamLength && upstreamLength > maxBytes) {
+    try { await response.body?.cancel(); } catch (_) {}
+    return json({ error: 'media_too_large', content_length: upstreamLength, max_bytes: maxBytes }, 413);
   }
 
   const headers = new Headers();
