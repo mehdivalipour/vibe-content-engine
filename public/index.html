@@ -47,7 +47,7 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
       <button data-view="manual"><span class="ico">⌕</span> جستجوی دستی</button>
       <button data-view="sources"><span class="ico">◫</span> منابع متصل</button>
     </div>
-    <div class="sidebox"><b><span class="dot"></span>نسخه 0.5.2 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
+    <div class="sidebox"><b><span class="dot"></span>نسخه 0.6.0 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
   </aside>
 
   <main class="main">
@@ -70,7 +70,12 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
           <div class="pb">
             <label class="lbl">موضوعات</label>
             <textarea id="topicsInput" placeholder="coffee&#10;travel&#10;space&#10;friendship&#10;psychology"></textarea>
-            <div class="upload"><input type="file" id="topicsFile" accept=".txt,.csv,.json,text/plain,application/json,text/csv"><span class="note">در JSON یک آرایه از رشته‌ها کافی است.</span></div>
+            <div class="upload">
+  <input type="file" id="topicsFile" accept=".txt,.csv,.json,text/plain,application/json,text/csv">
+  <button class="btn" id="loadUniverseBtn" type="button">بارگذاری Topic Universe (1800)</button>
+  <a class="btn" href="/topic-universe-v1.json" download="vibe-topic-universe-v1.json" style="text-decoration:none">دانلود JSON موضوعات</a>
+</div>
+<div class="note" id="topicFileSummary">JSON ساده یا Topic Universe غنی قابل استفاده است. Interest فقط یک سیگنال است؛ Discovery، Podcast و Music مستقل هم داریم.</div>
 
             <div class="counts">
               <div class="count"><b>متن</b><small>Text / article / story</small><input id="count-text" type="number" min="0" max="25" value="10"></div>
@@ -79,6 +84,21 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
               <div class="count"><b>پادکست</b><small>Podcast Vibe</small><input id="count-podcast" type="number" min="0" max="25" value="2"></div>
               <div class="count"><b>موسیقی</b><small>Music Vibe</small><input id="count-music" type="number" min="0" max="25" value="2"></div>
             </div>
+
+            <div class="settings">
+              <div><label class="lbl">Pool موضوعات</label>
+                <select id="poolFilter">
+                  <option value="all">همه Poolها</option>
+                  <option value="interest">Interest (800)</option>
+                  <option value="discovery">Discovery (500)</option>
+                  <option value="podcast">Podcast (250)</option>
+                  <option value="music">Music (250)</option>
+                </select>
+              </div>
+              <div><label class="lbl">حداکثر موضوع در این Batch</label><input id="maxTopics" type="number" min="0" max="1800" value="100"><div class="note">۰ = همه موضوعات. انتخاب از Universe به شکل متعادل انجام می‌شود.</div></div>
+            </div>
+
+            <label class="checkrow"><input type="checkbox" id="respectTypeFit" checked> تناسب نوع محتوا با موضوع رعایت شود (مثلا Food مجبور به Music نشود)</label>
 
             <div class="settings">
               <div><label class="lbl">زبان محتوای آموزشی</label><select id="learningLanguage"><option value="en">English</option><option value="de">German</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="fr">French</option><option value="es">Spanish</option><option value="it">Italian</option></select></div>
@@ -156,7 +176,7 @@ const TYPES = ["text","image","video","podcast","music"];
 const TYPE_LABEL = {text:"متن",image:"عکس",video:"ویدیو",podcast:"پادکست",music:"موسیقی"};
 const state = {
   running:false,cancelled:false,topics:[],accepted:[],rejected:[],review:[],
-  duplicates:0,errors:0,providerWarnings:0,seen:new Set(),topicStats:{},sources:[]
+  duplicates:0,errors:0,providerWarnings:0,seen:new Set(),topicStats:{},sources:[],importedTopics:[],topicMetaByQuery:{},universeMeta:null
 };
 
 document.querySelectorAll(".nav button").forEach(function(btn){
@@ -171,14 +191,53 @@ document.querySelectorAll(".nav button").forEach(function(btn){
 document.getElementById("topicsFile").addEventListener("change",async function(e){
   const file=e.target.files&&e.target.files[0]; if(!file)return;
   const text=await file.text();
-  let topics=[];
   if(file.name.toLowerCase().endsWith(".json")){
-    try{const j=JSON.parse(text);topics=Array.isArray(j)?j.map(String):[];}catch(_){}
-  } else {
-    topics=text.split(/[\n,;]+/).map(function(x){return x.trim()}).filter(Boolean);
+    try{
+      const j=JSON.parse(text);
+      const arr=Array.isArray(j)?j:(Array.isArray(j.topics)?j.topics:[]);
+      if(arr.length&&typeof arr[0]==="object"){
+        loadTopicRecords(arr,j);
+        return;
+      }
+      const topics=arr.map(String).map(function(x){return x.trim()}).filter(Boolean);
+      state.importedTopics=[];state.universeMeta=null;
+      document.getElementById("topicsInput").value=topics.join("\n");
+      document.getElementById("topicFileSummary").textContent=topics.length+" موضوع ساده از JSON بارگذاری شد.";
+      return;
+    }catch(err){
+      alert("JSON معتبر نیست: "+err.message); return;
+    }
   }
-  if(topics.length) document.getElementById("topicsInput").value=topics.join("\n");
+  const topics=text.split(/[\n,;]+/).map(function(x){return x.trim()}).filter(Boolean);
+  state.importedTopics=[];state.universeMeta=null;
+  document.getElementById("topicsInput").value=topics.join("\n");
+  document.getElementById("topicFileSummary").textContent=topics.length+" موضوع از فایل متنی بارگذاری شد.";
 });
+
+document.getElementById("loadUniverseBtn").addEventListener("click",async function(){
+  const btn=this;btn.disabled=true;btn.textContent="در حال بارگذاری...";
+  try{
+    const j=await apiJson("/topic-universe-v1.json?ts="+Date.now());
+    loadTopicRecords(j.topics||[],j);
+  }catch(err){alert("بارگذاری Topic Universe شکست خورد: "+err.message)}
+  finally{btn.disabled=false;btn.textContent="بارگذاری Topic Universe (1800)"}
+});
+
+document.getElementById("topicsInput").addEventListener("input",function(){
+  if(state.importedTopics.length){
+    state.importedTopics=[];state.universeMeta=null;
+    document.getElementById("topicFileSummary").textContent="ورودی دستی فعال شد؛ Topic Universe بارگذاری‌شده کنار گذاشته شد.";
+  }
+});
+
+function loadTopicRecords(arr,meta){
+  state.importedTopics=arr.filter(function(x){return x&&typeof x==="object"&&String(x.query||"").trim()});
+  state.universeMeta=meta||null;
+  const preview=state.importedTopics.slice(0,30).map(function(x){return x.query}).join("\n");
+  document.getElementById("topicsInput").value=preview+(state.importedTopics.length>30?"\n…":"");
+  const pools={};state.importedTopics.forEach(function(x){pools[x.pool||"custom"]=(pools[x.pool||"custom"]||0)+1});
+  document.getElementById("topicFileSummary").textContent="Topic Universe بارگذاری شد: "+state.importedTopics.length+" موضوع — "+Object.entries(pools).map(function(x){return x[0]+": "+x[1]}).join(" • ");
+}
 
 document.getElementById("startBatchBtn").addEventListener("click",startBatch);
 document.getElementById("cancelBatchBtn").addEventListener("click",function(){state.cancelled=true;setStatus("درخواست توقف ثبت شد؛ بعد از کار جاری متوقف می‌شود.")});
@@ -189,10 +248,42 @@ document.querySelectorAll("[data-pack-type]").forEach(function(btn){btn.addEvent
 document.getElementById("manualSearchBtn").addEventListener("click",manualSearch);
 document.getElementById("manualType").addEventListener("change",populateManualSources);
 
-function topicsFromInput(){
-  const raw=document.getElementById("topicsInput").value;
-  const arr=raw.split(/[\n,;]+/).map(function(x){return x.trim()}).filter(Boolean);
-  const seen=new Set(); return arr.filter(function(x){const k=x.toLowerCase();if(seen.has(k))return false;seen.add(k);return true});
+function topicEntriesFromInput(){
+  let entries=[];
+  if(state.importedTopics.length){
+    entries=state.importedTopics.slice();
+    const pool=document.getElementById("poolFilter").value;
+    if(pool!=="all")entries=entries.filter(function(x){return x.pool===pool});
+  }else{
+    const raw=document.getElementById("topicsInput").value;
+    entries=raw.split(/[\n,;]+/).map(function(x){return x.trim()}).filter(Boolean).map(function(q,i){
+      return {id:"manual_"+(i+1),query:q,pool:"manual",interest:null,main_goals:[],levels:[],search_queries:[q],content_type_fit:null,tags:[],character_affinity:[]};
+    });
+  }
+  const seen=new Set();
+  entries=entries.filter(function(x){
+    const q=String(x.query||"").trim();const k=q.toLowerCase();
+    if(!q||seen.has(k))return false;seen.add(k);return true;
+  });
+  const max=Math.max(0,Number(document.getElementById("maxTopics").value)||0);
+  return max?balancedTake(entries,max):entries;
+}
+function balancedTake(entries,max){
+  if(entries.length<=max)return entries;
+  const groups={};
+  entries.forEach(function(x){
+    const key=x.pool==="interest"?"interest:"+(x.interest||"unknown"):(x.pool||"other");
+    (groups[key]||(groups[key]=[])).push(x);
+  });
+  const keys=Object.keys(groups);const out=[];let round=0;
+  while(out.length<max){
+    let added=false;
+    for(const k of keys){
+      if(groups[k][round]){out.push(groups[k][round]);added=true;if(out.length>=max)break}
+    }
+    if(!added)break;round++;
+  }
+  return out;
 }
 function countsConfig(){
   const o={};TYPES.forEach(function(t){o[t]=Math.max(0,Math.min(25,Number(document.getElementById("count-"+t).value)||0))});return o;
@@ -223,7 +314,8 @@ function initTopicStats(topics,counts){
 function renderTopicRows(){
   const body=document.getElementById("topicRows");
   if(!state.topics.length){body.innerHTML='<tr><td colspan="7" class="empty">نتیجه‌ای نیست.</td></tr>';return}
-  body.innerHTML=state.topics.map(function(topic){
+  const visible=state.topics.slice(0,300);
+  body.innerHTML=visible.map(function(topic){
     const s=state.topicStats[topic]; const cells=TYPES.map(function(t){
       const x=s.types[t]; if(!x.want)return '<td>—</td>';
       const cls=x.got>=x.want?"ok":(x.status==="done"?"warn":"");
@@ -232,12 +324,12 @@ function renderTopicRows(){
     const sc=s.status==="done"?"ok":s.status==="running"?"warn":"";
     const st=s.status==="done"?"تمام":s.status==="running"?"در حال پردازش":"در صف";
     return "<tr><td><b>"+esc(topic)+"</b></td>"+cells+'<td class="'+sc+'">'+st+"</td></tr>";
-  }).join("");
+  }).join("")+(state.topics.length>300?'<tr><td colspan="7" class="empty">برای سبک ماندن صفحه، 300 موضوع اول نمایش داده می‌شود. Batch همه '+state.topics.length+' موضوع انتخاب‌شده را پردازش می‌کند.</td></tr>':'');
 }
 function esc(s){return String(s||"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function resetBatch(){
   if(state.running)return;
-  state.topics=[];state.accepted=[];state.rejected=[];state.review=[];state.duplicates=0;state.errors=0;state.providerWarnings=0;state.seen=new Set();state.topicStats={};
+  state.topics=[];state.accepted=[];state.rejected=[];state.review=[];state.duplicates=0;state.errors=0;state.providerWarnings=0;state.seen=new Set();state.topicStats={};state.topicMetaByQuery={};
   if(activePackUrl){URL.revokeObjectURL(activePackUrl);activePackUrl=null;}document.getElementById("batchProgress").style.width="0%";document.getElementById("jobState").textContent="Idle";setStatus("نتایج پاک شد.");packStatus("هنوز Pack ساخته نشده.");updateStats();renderTopicRows();
 }
 
@@ -248,16 +340,38 @@ async function apiJson(url,options){
 
 async function startBatch(){
   if(state.running)return;
-  const topics=topicsFromInput();const counts=countsConfig();
+  const entries=topicEntriesFromInput();const counts=countsConfig();
   const enabled=TYPES.filter(function(t){return counts[t]>0});
-  if(!topics.length){alert("حداقل یک موضوع وارد کن.");return}
+  if(!entries.length){alert("حداقل یک موضوع وارد یا بارگذاری کن.");return}
   if(!enabled.length){alert("برای حداقل یک نوع محتوا تعداد بزرگ‌تر از صفر بگذار.");return}
+  const topics=entries.map(function(x){return x.query});
+  const meta={};entries.forEach(function(x){meta[x.query]=x});
   resetBatch();
+  state.topicMetaByQuery=meta;
   state.running=true;state.cancelled=false;state.topics=topics;initTopicStats(topics,counts);updateStats();
   document.getElementById("startBatchBtn").disabled=true;document.getElementById("cancelBatchBtn").disabled=false;document.getElementById("jobState").textContent="Running";
-  const tasks=[];topics.forEach(function(topic){enabled.forEach(function(type){tasks.push({topic:topic,type:type,want:counts[type]})})});
+  const respectFit=document.getElementById("respectTypeFit").checked;
+  const tasks=[];topics.forEach(function(topic){
+    const tm=state.topicMetaByQuery[topic]||{};
+    enabled.forEach(function(type){
+      const fit=tm.content_type_fit&&Number(tm.content_type_fit[type]);
+      if(respectFit&&tm.content_type_fit&&(!Number.isFinite(fit)||fit<0.5))return;
+      tasks.push({topic:topic,type:type,want:counts[type],meta:tm});
+    });
+  });
+  if(respectFit){
+    topics.forEach(function(topic){
+      const tm=state.topicMetaByQuery[topic]||{};
+      TYPES.forEach(function(type){
+        const fit=tm.content_type_fit&&Number(tm.content_type_fit[type]);
+        if(tm.content_type_fit&&(!Number.isFinite(fit)||fit<0.5)){
+          state.topicStats[topic].types[type]={want:0,got:0,status:"off"};
+        }
+      });
+    });
+  }
   let done=0;
-  setStatus("Batch شروع شد: "+tasks.length+" کار جستجو/آماده‌سازی.");
+  setStatus("Batch شروع شد: "+tasks.length+" کار برای "+topics.length+" موضوع. تناسب نوع محتوا: "+(respectFit?"روشن":"خاموش"));
   for(let i=0;i<tasks.length;i++){
     if(state.cancelled)break;
     const task=tasks[i];state.topicStats[task.topic].status="running";renderTopicRows();
@@ -277,36 +391,51 @@ async function processTask(task){
   const strictLanguage=document.getElementById("strictLanguage").checked;
   const learning=document.getElementById("learningLanguage").value;
   const ui=document.getElementById("uiLanguage").value;
-  const searchLimit=Math.min(100,Math.max(task.want*4,12));
-  const url="/api/search?type="+encodeURIComponent(task.type)+"&source=all&q="+encodeURIComponent(task.topic)+"&limit="+searchLimit+"&safe="+safe;
-  const data=await apiJson(url);
-  const providerFailures=(data.providers||[]).filter(function(p){return !p.ok});
-  if(providerFailures.length){
-    state.providerWarnings=(state.providerWarnings||0)+providerFailures.length;
-  }
+  const searchLimit=Math.min(100,Math.max(task.want*3,10));
+  const tm=task.meta||state.topicMetaByQuery[task.topic]||{};
+  const queries=[...(Array.isArray(tm.search_queries)?tm.search_queries:[]),task.topic].map(function(x){return String(x||"").trim()}).filter(Boolean);
+  const queryList=[...new Set(queries)].slice(0,4);
   let got=0;
-  for(const item of (data.items||[])){
+  for(const searchQ of queryList){
     if(state.cancelled||got>=task.want)break;
-    const dedupe=String(item.source||"")+":"+String(item.id||"");
-    if(state.seen.has(dedupe)){state.duplicates++;continue}
-    state.seen.add(dedupe);
-    try{
-      const rr=await apiJson("/api/resolve",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(item)});
-      const resolved=rr.item||item;
-      if(strictLanguage&&resolved.language&&langNorm(resolved.language)!==langNorm(learning)){state.rejected.push({topic:task.topic,reason:"language",item:resolved});continue}
-      const pr=await apiJson("/api/prepare",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({item:resolved,learning_language:learning,ui_language:ui})});
-      const prepared=pr.prepared;
-      if(!prepared||prepared.completeness<100||prepared.source&&prepared.source.commercial_ok===false){
-        state.rejected.push({topic:task.topic,reason:"incomplete_or_rights",item:prepared||resolved});continue
-      }
-      if(prepared.source&&prepared.source.review_required&&!includeReview){
-        state.rejected.push({topic:task.topic,reason:"rights_review",item:prepared});continue
-      }
-      const record=Object.assign({},prepared,{topic:task.topic,source_item_id:resolved.id});
-      state.accepted.push(record);
-      if(record.source&&record.source.review_required)state.review.push(record);
-      got++;
-    }catch(err){state.errors++;state.rejected.push({topic:task.topic,reason:"error",error:String(err&&err.message||err),item:item})}
+    const url="/api/search?type="+encodeURIComponent(task.type)+"&source=all&q="+encodeURIComponent(searchQ)+"&limit="+searchLimit+"&safe="+safe;
+    const data=await apiJson(url);
+    const providerFailures=(data.providers||[]).filter(function(p){return !p.ok});
+    if(providerFailures.length)state.providerWarnings=(state.providerWarnings||0)+providerFailures.length;
+    for(const item of (data.items||[])){
+      if(state.cancelled||got>=task.want)break;
+      const dedupe=String(item.source||"")+":"+String(item.id||"");
+      if(state.seen.has(dedupe)){state.duplicates++;continue}
+      state.seen.add(dedupe);
+      try{
+        const rr=await apiJson("/api/resolve",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(item)});
+        const resolved=rr.item||item;
+        if(strictLanguage&&resolved.language&&langNorm(resolved.language)!==langNorm(learning)){state.rejected.push({topic:task.topic,reason:"language",item:resolved});continue}
+        const pr=await apiJson("/api/prepare",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({item:resolved,learning_language:learning,ui_language:ui})});
+        const prepared=pr.prepared;
+        if(!prepared||prepared.completeness<100||prepared.source&&prepared.source.commercial_ok===false){
+          state.rejected.push({topic:task.topic,reason:"incomplete_or_rights",item:prepared||resolved});continue
+        }
+        if(prepared.source&&prepared.source.review_required&&!includeReview){
+          state.rejected.push({topic:task.topic,reason:"rights_review",item:prepared});continue
+        }
+        const record=Object.assign({},prepared,{
+          topic:task.topic,
+          topic_id:tm.id||null,
+          topic_pool:tm.pool||"manual",
+          interest:tm.interest||null,
+          main_goals:Array.isArray(tm.main_goals)?tm.main_goals:[],
+          recommended_levels:Array.isArray(tm.levels)?tm.levels:[],
+          topic_tags:Array.isArray(tm.tags)?tm.tags:[],
+          character_affinity:Array.isArray(tm.character_affinity)?tm.character_affinity:[],
+          topic_type_fit:tm.content_type_fit||null,
+          source_item_id:resolved.id
+        });
+        state.accepted.push(record);
+        if(record.source&&record.source.review_required)state.review.push(record);
+        got++;
+      }catch(err){state.errors++;state.rejected.push({topic:task.topic,reason:"error",error:String(err&&err.message||err),item:item})}
+    }
   }
   const ts=state.topicStats[task.topic].types[task.type];ts.got=got;ts.status="done";
   const allDone=TYPES.every(function(t){const x=state.topicStats[task.topic].types[t];return x.status==="done"||x.status==="off"||x.status==="error"});
@@ -320,9 +449,9 @@ function cleanRecord(x){
 }
 function resultsPayload(){
   return {
-    engine_version:"0.5.2",
+    engine_version:"0.6.0",
     created_at:new Date().toISOString(),
-    config:{learning_language:document.getElementById("learningLanguage").value,ui_language:document.getElementById("uiLanguage").value,counts:countsConfig(),topics:state.topics},
+    config:{learning_language:document.getElementById("learningLanguage").value,ui_language:document.getElementById("uiLanguage").value,counts:countsConfig(),topics:state.topics,pool_filter:document.getElementById("poolFilter").value,max_topics:Number(document.getElementById("maxTopics").value)||0,respect_type_fit:document.getElementById("respectTypeFit").checked,topic_universe_version:state.universeMeta&&state.universeMeta.version||null},
     counts:{accepted:state.accepted.length,rejected:state.rejected.length,review:state.review.length,duplicates:state.duplicates,errors:state.errors,provider_warnings:state.providerWarnings||0},
     items:state.accepted.map(cleanRecord)
   };
@@ -364,7 +493,7 @@ async function buildPack(filterType){
   const label=filterType?TYPE_LABEL[filterType]:"کامل";
   packStatus("در حال ساخت Pack "+label+" — 0 / "+items.length);
   const entries=[];
-  const report={engine_version:"0.5.2",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[]};
+  const report={engine_version:"0.6.0",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[]};
   const licenses={};
   const manifest=resultsPayload();manifest.items=items.map(cleanRecord);
   entries.push({path:"manifest.json",data:jsonBytes(manifest)});
