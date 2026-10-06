@@ -32,9 +32,24 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
 .tablewrap{margin-top:15px;background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:var(--shadow)}table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:10px 11px;text-align:right;border-bottom:1px solid #f0f1f5}th{background:#fafbfc;color:#73798c;font-weight:700}tr:last-child td{border-bottom:0}.ok{color:var(--green);font-weight:800}.warn{color:var(--amber);font-weight:800}.bad{color:var(--red);font-weight:800}
 .manualbar{display:grid;grid-template-columns:1.6fr .7fr .7fr auto;gap:8px}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.result{border:1px solid var(--line);background:#fff;border-radius:16px;padding:12px;min-height:115px}.result h4{font-size:12px;margin:0 0 7px}.result p{font-size:9px;color:var(--muted);line-height:1.7;margin:0}.result small{display:block;margin-top:8px;color:#666e85}
 .sources{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.source{background:#fff;border:1px solid var(--line);border-radius:17px;padding:14px}.source h4{margin:0 0 5px;font-size:12px}.source p{font-size:9px;color:var(--muted);line-height:1.7}.tag{display:inline-block;padding:4px 7px;border-radius:99px;background:#f0f2f8;font-size:8px;margin:2px}.tag.live{background:var(--green-soft);color:var(--green)}.tag.off{background:var(--red-soft);color:var(--red)}
-.note{font-size:9px;color:var(--muted);line-height:1.8;margin-top:8px}.empty{text-align:center;color:#9298a9;padding:35px 10px;font-size:11px}
-@media(max-width:1050px){.app{grid-template-columns:1fr}.sidebar{height:auto;position:relative}.nav{flex-direction:row;overflow:auto}.sidebox{display:none}.grid{grid-template-columns:1fr}.counts{grid-template-columns:repeat(2,1fr)}.results,.sources{grid-template-columns:1fr 1fr}}
-@media(max-width:680px){.main{padding:16px}.top{align-items:flex-start;flex-direction:column}.counts,.settings,.stats,.results,.sources{grid-template-columns:1fr}.manualbar{grid-template-columns:1fr}.hero h3{font-size:18px}}
+.note{font-size:9px;color:var(--muted);line-height:1.8;margin-top:8px}
+.review-toolbar{display:grid;grid-template-columns:1.2fr .8fr .8fr auto;gap:8px;margin-bottom:14px}
+.review-summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+.review-chip{border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px 11px;font-size:10px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.review-card{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
+.review-media{height:230px;background:#171a29;display:grid;place-items:center;overflow:hidden}
+.review-media img,.review-media video{width:100%;height:100%;object-fit:cover}.review-media audio{width:88%}
+.review-text{height:230px;overflow:auto;padding:18px;background:#fbfbfd;font-size:11px;line-height:1.9;white-space:pre-wrap}
+.review-body{padding:12px}.review-body h4{margin:0 0 6px;font-size:12px}.review-body p{font-size:9px;line-height:1.7;color:var(--muted);margin:0 0 7px}
+.review-actions{display:flex;gap:7px;margin-top:9px}.review-actions .btn{flex:1;padding:8px 9px;font-size:10px}
+.btn.approve{background:var(--green-soft);color:var(--green);border-color:#c9eadb}.btn.reject{background:var(--red-soft);color:var(--red);border-color:#ffd7da}
+.badge{display:inline-block;padding:4px 7px;border-radius:999px;font-size:8px;margin:2px}.badge.a{background:#e9f8f1;color:#167550}.badge.b{background:#eef0ff;color:#5964bc}.badge.flag{background:#fff0f1;color:#b5454d}.badge.pending{background:#fff5df;color:#946215}
+.character-box{margin-top:10px;border-top:1px solid var(--line);padding-top:9px}
+.character-progress{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.character-progress div{font-size:9px;padding:7px;border:1px solid var(--line);border-radius:9px}
+.empty{text-align:center;color:#9298a9;padding:35px 10px;font-size:11px}
+@media(max-width:1050px){.review-grid{grid-template-columns:1fr 1fr}.review-toolbar{grid-template-columns:1fr 1fr}.app{grid-template-columns:1fr}.sidebar{height:auto;position:relative}.nav{flex-direction:row;overflow:auto}.sidebox{display:none}.grid{grid-template-columns:1fr}.counts{grid-template-columns:repeat(2,1fr)}.results,.sources{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.review-grid,.review-toolbar{grid-template-columns:1fr}.main{padding:16px}.top{align-items:flex-start;flex-direction:column}.counts,.settings,.stats,.results,.sources{grid-template-columns:1fr}.manualbar{grid-template-columns:1fr}.hero h3{font-size:18px}}
 </style>
 </head>
 <body>
@@ -44,10 +59,11 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
     <div class="side-title">ابزارها</div>
     <div class="nav">
       <button class="active" data-view="batch"><span class="ico">▦</span> کارخانه Batch</button>
+      <button data-view="review"><span class="ico">✓</span> گالری بررسی</button>
       <button data-view="manual"><span class="ico">⌕</span> جستجوی دستی</button>
       <button data-view="sources"><span class="ico">◫</span> منابع متصل</button>
     </div>
-    <div class="sidebox"><b><span class="dot"></span>نسخه 0.6.2 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
+    <div class="sidebox"><b><span class="dot"></span>نسخه 0.7.0 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
   </aside>
 
   <main class="main">
@@ -99,6 +115,7 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
             </div>
 
             <label class="checkrow"><input type="checkbox" id="respectTypeFit" checked> تناسب نوع محتوا با موضوع رعایت شود (مثلا Food مجبور به Music نشود)</label>
+            <label class="checkrow"><input type="checkbox" id="curatedMode" checked> حالت Quality First: منابع Tier A و مجموعه‌های Curated در اولویت باشند</label>
 
             <div class="settings">
               <div><label class="lbl">زبان محتوای آموزشی</label><select id="learningLanguage"><option value="en">English</option><option value="de">German</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="fr">French</option><option value="es">Spanish</option><option value="it">Italian</option></select></div>
@@ -124,9 +141,9 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
           <div class="pb">
             <div class="stats">
               <div class="stat"><b id="statTopics">0</b><span>موضوع</span></div>
-              <div class="stat"><b id="statAccepted">0</b><span>قبول شده</span></div>
+              <div class="stat"><b id="statAccepted">0</b><span>تایید انسانی</span></div>
               <div class="stat"><b id="statRejected">0</b><span>رد / ناقص</span></div>
-              <div class="stat"><b id="statReview">0</b><span>نیازمند Review</span></div>
+              <div class="stat"><b id="statReview">0</b><span>کاندیدا</span></div>
               <div class="stat"><b id="statDuplicates">0</b><span>تکراری</span></div>
               <div class="stat"><b id="statErrors">0</b><span>خطا</span></div>
             </div>
@@ -147,6 +164,44 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
           <thead><tr><th>موضوع</th><th>متن</th><th>عکس</th><th>ویدیو</th><th>پادکست</th><th>موسیقی</th><th>وضعیت</th></tr></thead>
           <tbody id="topicRows"><tr><td colspan="7" class="empty">بعد از شروع Batch، نتیجه هر موضوع اینجا دیده می‌شود.</td></tr></tbody>
         </table>
+      </div>
+    </section>
+
+    <section class="view" id="view-review">
+      <div class="grid">
+        <div class="panel">
+          <div class="ph"><div><h3>گالری بررسی انسانی</h3><p>Batch فقط Candidate می‌سازد. فقط مواردی که اینجا تایید می‌کنی وارد Pack نهایی می‌شوند.</p></div><span class="tag live">Human Gate</span></div>
+          <div class="pb">
+            <div class="review-toolbar">
+              <select id="reviewTypeFilter"><option value="all">همه نوع‌ها</option><option value="text">متن</option><option value="image">عکس</option><option value="video">ویدیو</option><option value="podcast">پادکست</option><option value="music">موسیقی</option></select>
+              <select id="reviewStatusFilter"><option value="pending">در انتظار بررسی</option><option value="approved">تاییدشده</option><option value="rejected">ردشده</option><option value="all">همه</option></select>
+              <select id="reviewSourceFilter"><option value="all">همه منابع</option></select>
+              <button class="btn" id="clearReviewBtn">پاک کردن Review</button>
+            </div>
+            <div class="review-summary">
+              <span class="review-chip">کاندیدا: <b id="reviewCandidateCount">0</b></span>
+              <span class="review-chip">تایید: <b id="reviewApprovedCount">0</b> / <b id="reviewTargetCount">45</b></span>
+              <span class="review-chip">رد: <b id="reviewRejectedCount">0</b></span>
+              <span class="review-chip">Flag ایمنی: <b id="reviewFlaggedCount">0</b></span>
+            </div>
+            <div class="review-grid" id="reviewGrid"><div class="empty">هنوز کاندیدایی جمع نشده است.</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><div><h3>Pilot 45</h3><p>۱۵ کاراکتر × ۳ محتوای تاییدشده. فعلا Match دستی/متعادل؛ Affinity بعدا اضافه می‌شود.</p></div></div>
+          <div class="pb">
+            <label class="lbl">نام کاراکترها — هر خط یک نام</label>
+            <textarea id="charactersInput" style="min-height:190px" placeholder="Lucia&#10;Salma&#10;Michael&#10;..."></textarea>
+            <div class="settings">
+              <div><label class="lbl">تعداد محتوا برای هر کاراکتر</label><input id="perCharacterTarget" type="number" min="1" max="10" value="3"></div>
+              <div><label class="lbl">هدف کل</label><input id="pilotTotalTarget" type="number" value="45" readonly></div>
+            </div>
+            <button class="btn orange" id="autoAssignBtn" style="margin-top:10px">تخصیص متعادل موارد تاییدشده</button>
+            <div class="character-progress" id="characterProgress"></div>
+            <div class="statusline">Approve کردن محتوا بدون نام کاراکتر هم ممکن است. وقتی ۱۵ اسم را وارد کنی، سیستم موارد تاییدشده را تا سقف تعیین‌شده بین کاراکترها پخش می‌کند.</div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -175,7 +230,7 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
 const TYPES = ["text","image","video","podcast","music"];
 const TYPE_LABEL = {text:"متن",image:"عکس",video:"ویدیو",podcast:"پادکست",music:"موسیقی"};
 const state = {
-  running:false,cancelled:false,topics:[],accepted:[],rejected:[],review:[],
+  running:false,cancelled:false,topics:[],accepted:[],rejected:[],review:[],candidates:[],reviewDecisions:{},
   duplicates:0,errors:0,providerWarnings:0,rejectionReasons:{},seen:new Set(),topicStats:{},sources:[],importedTopics:[],topicMetaByQuery:{},universeMeta:null
 };
 
@@ -247,6 +302,13 @@ document.getElementById("downloadFullPackBtn").addEventListener("click",function
 document.querySelectorAll("[data-pack-type]").forEach(function(btn){btn.addEventListener("click",function(){buildPack(btn.dataset.packType)})});
 document.getElementById("manualSearchBtn").addEventListener("click",manualSearch);
 document.getElementById("manualType").addEventListener("change",populateManualSources);
+document.getElementById("reviewTypeFilter").addEventListener("change",renderReviewGallery);
+document.getElementById("reviewStatusFilter").addEventListener("change",renderReviewGallery);
+document.getElementById("reviewSourceFilter").addEventListener("change",renderReviewGallery);
+document.getElementById("charactersInput").addEventListener("input",function(){updatePilotTarget();saveReviewState();renderCharacterProgress();renderReviewGallery()});
+document.getElementById("perCharacterTarget").addEventListener("input",function(){updatePilotTarget();saveReviewState();renderCharacterProgress()});
+document.getElementById("autoAssignBtn").addEventListener("click",autoAssignApproved);
+document.getElementById("clearReviewBtn").addEventListener("click",function(){if(confirm("Review Queue و تصمیم‌های انسانی پاک شوند؟")){state.candidates=[];state.accepted=[];state.reviewDecisions={};saveReviewState();updateStats();renderReviewGallery();renderCharacterProgress();}});
 
 function topicEntriesFromInput(){
   let entries=[];
@@ -295,7 +357,7 @@ function updateStats(){
   document.getElementById("statTopics").textContent=state.topics.length;
   document.getElementById("statAccepted").textContent=state.accepted.length;
   document.getElementById("statRejected").textContent=state.rejected.length;
-  document.getElementById("statReview").textContent=state.review.length;
+  document.getElementById("statReview").textContent=state.candidates.length;
   document.getElementById("statDuplicates").textContent=state.duplicates;
   document.getElementById("statErrors").textContent=state.errors;
   const has=state.accepted.length>0;
@@ -329,7 +391,7 @@ function renderTopicRows(){
 function esc(s){return String(s||"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function resetBatch(){
   if(state.running)return;
-  state.topics=[];state.accepted=[];state.rejected=[];state.review=[];state.duplicates=0;state.errors=0;state.providerWarnings=0;state.rejectionReasons={};state.seen=new Set();state.topicStats={};state.topicMetaByQuery={};
+  state.topics=[];state.rejected=[];state.review=[];state.duplicates=0;state.errors=0;state.providerWarnings=0;state.rejectionReasons={};state.seen=new Set();state.topicStats={};state.topicMetaByQuery={};
   if(activePackUrl){URL.revokeObjectURL(activePackUrl);activePackUrl=null;}document.getElementById("batchProgress").style.width="0%";document.getElementById("jobState").textContent="Idle";setStatus("نتایج پاک شد.");packStatus("هنوز Pack ساخته نشده.");updateStats();renderTopicRows();
 }
 
@@ -381,14 +443,16 @@ async function startBatch(){
   }
   Object.keys(state.topicStats).forEach(function(k){if(state.topicStats[k].status!=="done")state.topicStats[k].status="done"});
   state.running=false;document.getElementById("startBatchBtn").disabled=false;document.getElementById("cancelBatchBtn").disabled=true;document.getElementById("jobState").textContent=state.cancelled?"Stopped":"Done";
-  const byType={};TYPES.forEach(function(t){byType[t]=state.accepted.filter(function(x){return x.type===t}).length});
+  const byType={};TYPES.forEach(function(t){byType[t]=state.candidates.filter(function(x){return x.type===t}).length});
   const rejectText=Object.entries(state.rejectionReasons||{}).map(function(x){return x[0]+": "+x[1]}).join(" • ");
-  setStatus(state.cancelled?"Batch متوقف شد. نتایج فعلی قابل دانلودند.":"Batch تمام شد. "+state.accepted.length+" Vibe آماده است — متن "+byType.text+" • عکس "+byType.image+" • ویدیو "+byType.video+" • پادکست "+byType.podcast+" • موسیقی "+byType.music+(state.providerWarnings?(" • هشدار منبع "+state.providerWarnings):"")+(rejectText?(" • ردها: "+rejectText):""));
+  setStatus(state.cancelled?"Batch متوقف شد. Candidateهای فعلی در Review Gallery مانده‌اند.":"Batch تمام شد. "+state.candidates.length+" Candidate برای بررسی انسانی — متن "+byType.text+" • عکس "+byType.image+" • ویدیو "+byType.video+" • پادکست "+byType.podcast+" • موسیقی "+byType.music+(state.providerWarnings?(" • هشدار منبع "+state.providerWarnings):"")+(rejectText?(" • رد خودکار: "+rejectText):""));
+  renderReviewGallery();
   renderTopicRows();updateStats();
 }
 
 async function processTask(task){
   const safe=document.getElementById("safeSearch").checked?"1":"0";
+  const curated=document.getElementById("curatedMode").checked?"1":"0";
   const includeReview=document.getElementById("includeReview").checked;
   const strictLanguage=document.getElementById("strictLanguage").checked;
   const learning=document.getElementById("learningLanguage").value;
@@ -403,7 +467,7 @@ async function processTask(task){
   let got=0;
   for(const searchQ of queryList){
     if(state.cancelled||got>=task.want)break;
-    const url="/api/search?type="+encodeURIComponent(task.type)+"&source=all&q="+encodeURIComponent(searchQ)+"&limit="+searchLimit+"&safe="+safe;
+    const url="/api/search?type="+encodeURIComponent(task.type)+"&source=all&q="+encodeURIComponent(searchQ)+"&limit="+searchLimit+"&safe="+safe+"&curated="+curated;
     const data=await apiJson(url);
     const providerFailures=(data.providers||[]).filter(function(p){return !p.ok});
     if(providerFailures.length)state.providerWarnings=(state.providerWarnings||0)+providerFailures.length;
@@ -418,7 +482,7 @@ async function processTask(task){
         if(strictLanguage&&resolved.language&&langNorm(resolved.language)!==langNorm(learning)){state.rejectionReasons.language=(state.rejectionReasons.language||0)+1;state.rejected.push({topic:task.topic,reason:"language",item:resolved});continue}
         const pr=await apiJson("/api/prepare",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({item:resolved,learning_language:learning,ui_language:ui})});
         const prepared=pr.prepared;
-        if(!prepared||prepared.completeness<100||prepared.quality_ok===false||prepared.source&&prepared.source.commercial_ok===false){
+        if(!prepared||prepared.completeness<100||prepared.quality_ok===false||prepared.safety_status==="blocked"||prepared.source&&prepared.source.commercial_ok===false){
           const rrKey=!prepared?"prepare_missing":(prepared.source&&prepared.source.commercial_ok===false?"rights_blocked":(prepared.quality_ok===false?(prepared.quality_issues&&prepared.quality_issues[0]||"quality"):"incomplete"));state.rejectionReasons[rrKey]=(state.rejectionReasons[rrKey]||0)+1;state.rejected.push({topic:task.topic,reason:rrKey,item:prepared||resolved});continue
         }
         if(prepared.source&&prepared.source.review_required&&!includeReview){
@@ -436,7 +500,12 @@ async function processTask(task){
           topic_type_fit:tm.content_type_fit||null,
           source_item_id:resolved.id
         });
-        state.accepted.push(record);
+        if(!state.candidates.some(function(x){return x.provider_raw_id===record.provider_raw_id&&x.source&&record.source&&x.source.id===record.source.id})){
+          record.review_status="pending";
+          record.assigned_character=null;
+          state.candidates.push(record);
+          saveReviewState();
+        }
         if(record.source&&record.source.review_required)state.review.push(record);
         got++;
       }catch(err){state.errors++;state.rejectionReasons.error=(state.rejectionReasons.error||0)+1;state.rejected.push({topic:task.topic,reason:"error",error:String(err&&err.message||err),item:item})}
@@ -447,6 +516,121 @@ async function processTask(task){
   if(allDone)state.topicStats[task.topic].status="done";
 }
 
+function charactersList(){
+  const arr=document.getElementById("charactersInput").value.split(/\n+/).map(function(x){return x.trim()}).filter(Boolean);
+  return [...new Set(arr)];
+}
+function updatePilotTarget(){
+  const chars=charactersList();
+  const per=Math.max(1,Number(document.getElementById("perCharacterTarget").value)||3);
+  document.getElementById("pilotTotalTarget").value=chars.length?chars.length*per:45;
+  document.getElementById("reviewTargetCount").textContent=chars.length?chars.length*per:45;
+}
+function decisionKey(item){return String(item.source&&item.source.id||"")+":"+String(item.provider_raw_id||item.content_id||"")}
+function candidateStatus(item){return state.reviewDecisions[decisionKey(item)]&&state.reviewDecisions[decisionKey(item)].status||"pending"}
+function assignedCharacter(item){return state.reviewDecisions[decisionKey(item)]&&state.reviewDecisions[decisionKey(item)].character||item.assigned_character||""}
+
+function approveCandidate(key){
+  const item=state.candidates.find(function(x){return decisionKey(x)===key});if(!item)return;
+  const sel=document.querySelector('[data-character-key="'+CSS.escape(key)+'"]');
+  let character=sel&&sel.value||"";
+  if(!character){
+    const chars=charactersList();
+    if(chars.length)character=leastUsedCharacter(chars);
+  }
+  state.reviewDecisions[key]={status:"approved",character:character};
+  const copy=JSON.parse(JSON.stringify(item));copy.review_status="approved";copy.assigned_character=character||null;copy.publisher_character=character||null;copy.character_binding=character?"pilot_manual":"generic";
+  state.accepted=state.accepted.filter(function(x){return decisionKey(x)!==key});state.accepted.push(copy);
+  saveReviewState();updateStats();renderReviewGallery();renderCharacterProgress();
+}
+function rejectCandidate(key){
+  state.reviewDecisions[key]={status:"rejected",character:null};
+  state.accepted=state.accepted.filter(function(x){return decisionKey(x)!==key});
+  saveReviewState();updateStats();renderReviewGallery();renderCharacterProgress();
+}
+function leastUsedCharacter(chars){
+  const counts={};chars.forEach(function(c){counts[c]=0});
+  state.accepted.forEach(function(x){if(x.assigned_character&&counts[x.assigned_character]!=null)counts[x.assigned_character]++});
+  return chars.slice().sort(function(a,b){return counts[a]-counts[b]})[0]||"";
+}
+function autoAssignApproved(){
+  const chars=charactersList();if(!chars.length){alert("ابتدا نام کاراکترها را وارد کن.");return}
+  const per=Math.max(1,Number(document.getElementById("perCharacterTarget").value)||3);
+  const counts={};chars.forEach(function(c){counts[c]=0});
+  state.accepted.forEach(function(x){if(x.assigned_character&&counts[x.assigned_character]!=null)counts[x.assigned_character]++});
+  for(const item of state.accepted){
+    if(item.assigned_character&&chars.includes(item.assigned_character))continue;
+    const target=chars.filter(function(c){return counts[c]<per}).sort(function(a,b){return counts[a]-counts[b]})[0];
+    if(!target)break;
+    item.assigned_character=target;item.publisher_character=target;item.character_binding="pilot_balanced";
+    counts[target]++;
+    const k=decisionKey(item);state.reviewDecisions[k]={status:"approved",character:target};
+  }
+  saveReviewState();renderReviewGallery();renderCharacterProgress();
+}
+function renderCharacterProgress(){
+  const box=document.getElementById("characterProgress");const chars=charactersList();const per=Math.max(1,Number(document.getElementById("perCharacterTarget").value)||3);
+  if(!chars.length){box.innerHTML='<div>نام کاراکترها را وارد کن</div>';return}
+  const counts={};chars.forEach(function(c){counts[c]=0});state.accepted.forEach(function(x){if(x.assigned_character&&counts[x.assigned_character]!=null)counts[x.assigned_character]++});
+  box.innerHTML=chars.map(function(c){return '<div><b>'+esc(c)+'</b><br><span dir="ltr">'+counts[c]+' / '+per+'</span></div>'}).join("");
+}
+function reviewMedia(item){
+  const url=item.media_url||"";const poster=item.poster_url||item.media_url||"";const prox=url?"/api/proxy?url="+encodeURIComponent(url):"";
+  if(item.type==="image"&&url)return '<div class="review-media"><img loading="lazy" src="'+esc(url)+'" alt=""></div>';
+  if(item.type==="video"&&url)return '<div class="review-media"><video controls preload="metadata" poster="'+esc(poster)+'"><source src="'+esc(prox)+'"></video></div>';
+  if((item.type==="podcast"||item.type==="music")&&url)return '<div class="review-media"><audio controls preload="none" src="'+esc(prox)+'"></audio></div>';
+  return '<div class="review-text">'+esc((item.body||item.description||item.title||"").slice(0,1800))+'</div>';
+}
+function renderReviewGallery(){
+  const grid=document.getElementById("reviewGrid");if(!grid)return;
+  const type=document.getElementById("reviewTypeFilter").value;
+  const status=document.getElementById("reviewStatusFilter").value;
+  const source=document.getElementById("reviewSourceFilter").value;
+  const chars=charactersList();
+  const sources=[...new Set(state.candidates.map(function(x){return x.source&&x.source.id}).filter(Boolean))];
+  const ss=document.getElementById("reviewSourceFilter");const old=ss.value;
+  ss.innerHTML='<option value="all">همه منابع</option>'+sources.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>'}).join("");if(sources.includes(old)||old==="all")ss.value=old;
+  let arr=state.candidates.filter(function(x){
+    const st=candidateStatus(x);
+    return (type==="all"||x.type===type)&&(status==="all"||st===status)&&(source==="all"||x.source&&x.source.id===source);
+  }).sort(function(a,b){return (b.quality_score||0)-(a.quality_score||0)});
+  document.getElementById("reviewCandidateCount").textContent=state.candidates.length;
+  document.getElementById("reviewApprovedCount").textContent=state.accepted.length;
+  document.getElementById("reviewRejectedCount").textContent=Object.values(state.reviewDecisions).filter(function(x){return x.status==="rejected"}).length;
+  document.getElementById("reviewFlaggedCount").textContent=state.candidates.filter(function(x){return x.safety_status==="flagged"}).length;
+  updatePilotTarget();
+  if(!arr.length){grid.innerHTML='<div class="empty">در این فیلتر موردی نیست.</div>';return}
+  grid.innerHTML=arr.slice(0,180).map(function(item){
+    const key=decisionKey(item),st=candidateStatus(item),assigned=assignedCharacter(item);
+    const tier=item.source_quality_tier||"B";const flagged=item.safety_status==="flagged";
+    const options='<option value="">بدون تخصیص</option>'+chars.map(function(c){return '<option value="'+esc(c)+'" '+(assigned===c?'selected':'')+'>'+esc(c)+'</option>'}).join("");
+    return '<div class="review-card">'+reviewMedia(item)+'<div class="review-body">'
+      +'<div><span class="badge '+(tier==="A"?"a":"b")+'">Tier '+esc(tier)+'</span><span class="badge pending">Quality '+Number(item.quality_score||0)+'</span>'+(flagged?'<span class="badge flag">Safety Flag</span>':'')+'</div>'
+      +'<h4>'+esc(item.title||"بدون عنوان")+'</h4>'
+      +'<p>'+esc((item.description||"").slice(0,260))+'</p>'
+      +'<p><b>'+esc(item.type)+'</b> • '+esc(item.source&&item.source.id||"")+' • '+esc(item.topic||"")+'</p>'
+      +'<p>License: '+esc(item.source&&item.source.license||"")+'</p>'
+      +'<div class="character-box"><select data-character-key="'+esc(key)+'">'+options+'</select></div>'
+      +'<div class="review-actions"><button class="btn approve" onclick="approveCandidate('+JSON.stringify(key)+')">'+(st==="approved"?"✓ تاییدشده":"✓ تایید")+'</button><button class="btn reject" onclick="rejectCandidate('+JSON.stringify(key)+')">'+(st==="rejected"?"✕ ردشده":"✕ رد")+'</button></div>'
+      +'</div></div>';
+  }).join("");
+}
+function saveReviewState(){
+  try{
+    localStorage.setItem("vibe_review_v070",JSON.stringify({candidates:state.candidates.slice(-300),accepted:state.accepted.slice(-100),reviewDecisions:state.reviewDecisions,characters:document.getElementById("charactersInput").value,perCharacter:document.getElementById("perCharacterTarget").value}));
+  }catch(_){}
+}
+function restoreReviewState(){
+  try{
+    const x=JSON.parse(localStorage.getItem("vibe_review_v070")||"null");if(!x)return;
+    state.candidates=Array.isArray(x.candidates)?x.candidates:[];
+    state.accepted=Array.isArray(x.accepted)?x.accepted:[];
+    state.reviewDecisions=x.reviewDecisions||{};
+    document.getElementById("charactersInput").value=x.characters||"";
+    document.getElementById("perCharacterTarget").value=x.perCharacter||3;
+  }catch(_){}
+}
+
 function cleanRecord(x){
   const o=JSON.parse(JSON.stringify(x));
   delete o.runtime_fields;
@@ -454,10 +638,10 @@ function cleanRecord(x){
 }
 function resultsPayload(){
   return {
-    engine_version:"0.6.2",
+    engine_version:"0.7.0",
     created_at:new Date().toISOString(),
     config:{learning_language:document.getElementById("learningLanguage").value,ui_language:document.getElementById("uiLanguage").value,counts:countsConfig(),topics:state.topics,pool_filter:document.getElementById("poolFilter").value,max_topics:Number(document.getElementById("maxTopics").value)||0,respect_type_fit:document.getElementById("respectTypeFit").checked,topic_universe_version:state.universeMeta&&state.universeMeta.version||null},
-    counts:{accepted:state.accepted.length,rejected:state.rejected.length,review:state.review.length,duplicates:state.duplicates,errors:state.errors,provider_warnings:state.providerWarnings||0,rejection_reasons:state.rejectionReasons||{}},
+    counts:{approved:state.accepted.length,candidates:state.candidates.length,rejected:state.rejected.length,review_source_items:state.review.length,duplicates:state.duplicates,errors:state.errors,provider_warnings:state.providerWarnings||0,rejection_reasons:state.rejectionReasons||{}},
     items:state.accepted.map(cleanRecord)
   };
 }
@@ -510,7 +694,7 @@ async function buildPack(filterType){
   packStatus("در حال ساخت Pack "+label+" — 0 / "+items.length);
   const entries=[];
   currentPackBytes=0;
-  const report={engine_version:"0.6.2",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[],media_skipped:[],included_media_bytes:0};
+  const report={engine_version:"0.7.0",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[],media_skipped:[],included_media_bytes:0};
   const licenses={};
   const manifest=resultsPayload();manifest.items=items.map(cleanRecord);
   entries.push({path:"manifest.json",data:jsonBytes(manifest)});
@@ -647,7 +831,7 @@ function renderSources(){
   const g=document.getElementById("sourcesGrid");
   g.innerHTML=state.sources.map(function(s){
     const ts=(s.types||[]).map(function(t){return '<span class="tag">'+esc(TYPE_LABEL[t]||t)+'</span>'}).join("");
-    return '<div class="source"><h4>'+esc(s.name)+' '+(s.live?'<span class="tag live">متصل</span>':'<span class="tag off">نیاز به Key</span>')+'</h4><p>'+esc(s.note||"")+'</p><div>'+ts+'</div><p><b>روش:</b> '+esc(s.mode||"")+'<br><b>مجوز:</b> '+esc(s.rights||"")+'</p></div>';
+    return '<div class="source"><h4>'+esc(s.name)+' '+(s.live?'<span class="tag live">متصل</span>':'<span class="tag off">نیاز به Key</span>')+(s.quality_tier?'<span class="tag">Tier '+esc(s.quality_tier)+'</span>':'')+'</h4><p>'+esc(s.note||"")+'</p><div>'+ts+'</div><p><b>روش:</b> '+esc(s.mode||"")+'<br><b>مجوز:</b> '+esc(s.rights||"")+'</p></div>';
   }).join("");
 }
 function populateManualSources(){
@@ -666,7 +850,7 @@ async function manualSearch(){
   }catch(err){box.innerHTML='<div class="empty">خطا: '+esc(err.message)+'</div>'}
 }
 
-loadSources();updateStats();
+restoreReviewState();loadSources();updateStats();renderReviewGallery();renderCharacterProgress();updatePilotTarget();
 </script>
 </body>
 </html>
