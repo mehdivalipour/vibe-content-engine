@@ -3,7 +3,7 @@ const JSON_HEADERS = {
   'cache-control': 'no-store',
 };
 
-const SOURCE_USER_AGENT = 'VibeContentEngine/0.4.2 (https://speakme.ir/)';
+const SOURCE_USER_AGENT = 'VibeContentEngine/0.5.0 (https://speakme.ir/)';
 
 function withSourceHeaders(url, options = {}) {
   const headers = new Headers(options.headers || {});
@@ -27,8 +27,9 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
-      if (url.pathname === '/api/health') return json({ ok: true, version: '0.4.2', now: new Date().toISOString() });
+      if (url.pathname === '/api/health') return json({ ok: true, version: '0.5.0', now: new Date().toISOString() });
       if (url.pathname === '/api/sources') return json({ sources: sourceRegistry(env) });
+      if (url.pathname === '/api/proxy' && request.method === 'GET') return handleProxy(url, ctx);
       if (url.pathname === '/api/search') return handleSearch(url, env, ctx);
       if (url.pathname === '/api/resolve' && request.method === 'POST') return handleResolve(request, env, ctx);
       if (url.pathname === '/api/prepare' && request.method === 'POST') return handlePrepare(request, env);
@@ -522,6 +523,55 @@ function chooseMedia(hrefs, type) {
     : [/\.jpg(\?|$)/i, /\.jpeg(\?|$)/i, /\.png(\?|$)/i, /\.tif(\?|$)/i];
   for (const re of prefs) { const found = hrefs.find(h => re.test(h)); if (found) return found; }
   return hrefs[0] || '';
+}
+
+
+const PACK_ALLOWED_HOST_SUFFIXES = [
+  'gutenberg.org',
+  'wikisource.org',
+  'wikimedia.org',
+  'nasa.gov',
+  'archive.org',
+  'librivox.org',
+  'si.edu',
+  'pixabay.com'
+];
+
+function isAllowedPackHost(hostname = '') {
+  const host = String(hostname || '').toLowerCase();
+  return PACK_ALLOWED_HOST_SUFFIXES.some(suffix => host === suffix || host.endsWith('.' + suffix));
+}
+
+async function handleProxy(url, ctx) {
+  const raw = (url.searchParams.get('url') || '').trim();
+  if (!raw) return json({ error: 'url لازم است.' }, 400);
+
+  let target;
+  try { target = new URL(raw); }
+  catch { return json({ error: 'آدرس فایل نامعتبر است.' }, 400); }
+
+  if (target.protocol !== 'https:' || !isAllowedPackHost(target.hostname)) {
+    return json({ error: 'این میزبان برای Pack مجاز نیست.' }, 403);
+  }
+
+  const response = await fetch(target.toString(), withSourceHeaders(target.toString(), {
+    redirect: 'follow',
+    headers: { 'Accept': '*/*' }
+  }));
+
+  if (!response.ok) {
+    return json({ error: `Download upstream ${response.status}` }, 502);
+  }
+
+  const headers = new Headers();
+  const contentType = response.headers.get('content-type');
+  const contentLength = response.headers.get('content-length');
+  if (contentType) headers.set('content-type', contentType);
+  if (contentLength) headers.set('content-length', contentLength);
+  headers.set('cache-control', 'public, max-age=86400');
+  headers.set('x-vibe-source-host', target.hostname);
+
+  return new Response(response.body, { status: 200, headers });
 }
 
 async function handlePrepare(request, env) {
