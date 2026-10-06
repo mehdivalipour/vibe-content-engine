@@ -3,11 +3,31 @@ const JSON_HEADERS = {
   'cache-control': 'no-store',
 };
 
+const SOURCE_USER_AGENT = 'VibeContentEngine/0.4.2 (https://speakme.ir/)';
+
+function withSourceHeaders(url, options = {}) {
+  const headers = new Headers(options.headers || {});
+  if (!headers.has('User-Agent')) headers.set('User-Agent', SOURCE_USER_AGENT);
+  if (!headers.has('Accept')) headers.set('Accept', 'application/json, text/plain;q=0.9, */*;q=0.8');
+
+  const host = new URL(url.toString()).hostname.toLowerCase();
+  const isWikimedia =
+    host === 'wikimedia.org' || host.endsWith('.wikimedia.org') ||
+    host === 'wikisource.org' || host.endsWith('.wikisource.org') ||
+    host === 'wikipedia.org' || host.endsWith('.wikipedia.org');
+
+  if (isWikimedia && !headers.has('Api-User-Agent')) {
+    headers.set('Api-User-Agent', SOURCE_USER_AGENT);
+  }
+
+  return { ...options, headers };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
-      if (url.pathname === '/api/health') return json({ ok: true, version: '0.4.1', now: new Date().toISOString() });
+      if (url.pathname === '/api/health') return json({ ok: true, version: '0.4.2', now: new Date().toISOString() });
       if (url.pathname === '/api/sources') return json({ sources: sourceRegistry(env) });
       if (url.pathname === '/api/search') return handleSearch(url, env, ctx);
       if (url.pathname === '/api/resolve' && request.method === 'POST') return handleResolve(request, env, ctx);
@@ -125,8 +145,9 @@ async function searchSource(source, type, q, limit, offset, safe, env, ctx) {
 }
 
 async function cachedFetch(url, options = {}, ttl = 1800, ctx) {
-  const request = new Request(url, options);
-  if ((options.method || 'GET').toUpperCase() !== 'GET') return fetch(request);
+  const identifiedOptions = withSourceHeaders(url, options);
+  const request = new Request(url, identifiedOptions);
+  if ((identifiedOptions.method || 'GET').toUpperCase() !== 'GET') return fetch(request);
   const cache = caches.default;
   let response = await cache.match(request);
   if (response) return response;
@@ -142,7 +163,7 @@ async function cachedFetch(url, options = {}, ttl = 1800, ctx) {
 
 async function searchGutenberg(q, limit) {
   const u = `https://www.gutenberg.org/ebooks/search.opds/?query=${encodeURIComponent(q)}`;
-  const r = await fetch(u, { headers: { 'User-Agent': 'VibeContentEngine/0.4.1 (+https://speakme.ir)' } });
+  const r = await fetch(u, withSourceHeaders(u, { headers: { 'Accept': 'application/atom+xml, application/xml;q=0.9, */*;q=0.8' } }));
   if (!r.ok) throw new Error(`Gutenberg ${r.status}`);
   const xml = await r.text();
   return parseGutenbergOpds(xml).slice(0, limit);
@@ -195,7 +216,7 @@ async function searchWikisource(q, limit) {
     action: 'query', generator: 'search', gsrsearch: q, gsrnamespace: '0', gsrlimit: String(limit),
     prop: 'extracts|info', exintro: '1', explaintext: '1', exchars: '1400', inprop: 'url', format: 'json', origin: '*'
   }).toString();
-  const r = await fetch(api);
+  const r = await fetch(api, withSourceHeaders(api));
   if (!r.ok) throw new Error(`Wikisource ${r.status}`);
   const data = await r.json();
   return Object.values(data.query?.pages || {}).map(p => normalizeItem({
@@ -409,7 +430,7 @@ async function handleResolve(request, env, ctx) {
   if (item.source === 'gutenberg') {
     let resolvedText = '';
     if (item.media_url) {
-      const r = await cachedFetch(item.media_url, { headers: { 'User-Agent': 'VibeContentEngine/0.4.1 (+https://speakme.ir)' } }, 3600, ctx);
+      const r = await cachedFetch(item.media_url, {}, 3600, ctx);
       if (r.ok) {
         const ct = r.headers.get('content-type') || '';
         const raw = await r.text();
