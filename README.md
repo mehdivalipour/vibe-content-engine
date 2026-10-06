@@ -241,7 +241,7 @@ Pack کامل برای Batchهای خیلی بزرگ ممکن است سنگین 
 - Object URL قبلی هنگام Reset آزاد می شود.
 
 
-## v0.6.0 — Topic Universe v1
+## v0.6.1 — Topic Universe v1
 
 - فایل `public/topic-universe-v1.json` با 1800 Seed اضافه شد.
 - 800 موضوع Interest: دقیقاً 100 موضوع برای هر یک از 8 Interest رسمی Planning.
@@ -254,3 +254,16 @@ Pack کامل برای Batchهای خیلی بزرگ ممکن است سنگین 
 - Batch با گزینه «تناسب نوع محتوا» از اتصال های بی معنی مثل Food→Music جلوگیری می کند.
 - در Topic Universe، موتور تا 4 search query برای هر Seed امتحان می کند تا شانس رسیدن به quota بیشتر شود.
 - Character affinity فعلاً خالی است و بعد از دریافت Profile کاراکترها پر می شود؛ fixed bindings بعداً باید حفظ شوند و generic content در Publish Queue match شود.
+
+
+## v0.6.1 — پوشش واقعی پنج نوع محتوا
+
+- Wikipedia به‌عنوان منبع Text با CC BY-SA 4.0 و وضعیت Review اضافه شد تا Topicهای عمومی پوشش بهتری داشته باشند.
+- Navigation entryهای Project Gutenberg مثل Authors/Subjects دیگر به‌عنوان متن واقعی قبول نمی‌شوند.
+- مدت زمان دیگر شرط blocking برای Video/Podcast/Music نیست؛ اگر Source ارائه کند ذخیره می‌شود و در غیر این صورت Player می‌تواند آن را از Media بخواند.
+- Wikimedia audio/video با Query کمتر محدودکننده جستجو می‌شود.
+- Internet Archive برای Podcast نیز از مجموعه LibriVox استفاده می‌شود.
+- LibriVox برای Queryهای طولانی یک fallback تک‌واژه‌ای دارد.
+- Text کوتاه‌تر از 35 واژه به‌عنوان محتوای ضعیف رد می‌شود.
+- UI دلیل ردها و تعداد Accepted هر Content Type را در پایان Batch نشان می‌دهد.
+- نمایش got / wanted در جدول با جهت LTR اصلاح شد تا در RTL عدد 0/10 برعکس دیده نشود.
