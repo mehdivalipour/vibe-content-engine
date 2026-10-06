@@ -47,7 +47,7 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
       <button data-view="manual"><span class="ico">⌕</span> جستجوی دستی</button>
       <button data-view="sources"><span class="ico">◫</span> منابع متصل</button>
     </div>
-    <div class="sidebox"><b><span class="dot"></span>نسخه 0.5.1 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
+    <div class="sidebox"><b><span class="dot"></span>نسخه 0.5.2 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
   </aside>
 
   <main class="main">
@@ -117,7 +117,7 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
               <button class="btn" data-pack-type="podcast" disabled>ZIP پادکست</button>
               <button class="btn" data-pack-type="music" disabled>ZIP موسیقی</button>
             </div>
-            <div class="statusline" id="packStatus">ساختار Pack: manifest.json + report.json + licenses.json + پوشه json + پوشه‌های text / image / video / podcast / music.</div>
+            <div class="statusline" id="packStatus">ساختار Pack: manifest.json + report.json + licenses.json + پوشه json + پوشه‌های text / image / video / podcast / music. بعد از ساخت، لینک دانلود واقعی همین‌جا ظاهر می‌شود.</div>
           </div>
         </div>
       </div>
@@ -238,7 +238,7 @@ function esc(s){return String(s||"").replace(/[&<>"']/g,function(c){return {"&":
 function resetBatch(){
   if(state.running)return;
   state.topics=[];state.accepted=[];state.rejected=[];state.review=[];state.duplicates=0;state.errors=0;state.providerWarnings=0;state.seen=new Set();state.topicStats={};
-  document.getElementById("batchProgress").style.width="0%";document.getElementById("jobState").textContent="Idle";setStatus("نتایج پاک شد.");packStatus("هنوز Pack ساخته نشده.");updateStats();renderTopicRows();
+  if(activePackUrl){URL.revokeObjectURL(activePackUrl);activePackUrl=null;}document.getElementById("batchProgress").style.width="0%";document.getElementById("jobState").textContent="Idle";setStatus("نتایج پاک شد.");packStatus("هنوز Pack ساخته نشده.");updateStats();renderTopicRows();
 }
 
 async function apiJson(url,options){
@@ -320,7 +320,7 @@ function cleanRecord(x){
 }
 function resultsPayload(){
   return {
-    engine_version:"0.5.1",
+    engine_version:"0.5.2",
     created_at:new Date().toISOString(),
     config:{learning_language:document.getElementById("learningLanguage").value,ui_language:document.getElementById("uiLanguage").value,counts:countsConfig(),topics:state.topics},
     counts:{accepted:state.accepted.length,rejected:state.rejected.length,review:state.review.length,duplicates:state.duplicates,errors:state.errors,provider_warnings:state.providerWarnings||0},
@@ -333,6 +333,29 @@ function downloadResultsJson(){
 }
 function dateStamp(){return new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}
 function saveBlob(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}
+let activePackUrl=null;
+function offerPackDownload(blob,name,summary){
+  if(activePackUrl)URL.revokeObjectURL(activePackUrl);
+  activePackUrl=URL.createObjectURL(blob);
+  const box=document.getElementById("packStatus");
+  box.textContent="";
+  const text=document.createElement("span");
+  text.textContent=(summary||"Pack آماده شد.")+" ";
+  const a=document.createElement("a");
+  a.href=activePackUrl;
+  a.download=name;
+  a.textContent="دانلود فایل ZIP آماده";
+  a.style.display="inline-block";
+  a.style.marginRight="8px";
+  a.style.padding="8px 12px";
+  a.style.borderRadius="10px";
+  a.style.background="#181c2d";
+  a.style.color="#fff";
+  a.style.textDecoration="none";
+  a.style.fontWeight="700";
+  box.appendChild(text);
+  box.appendChild(a);
+}
 
 async function buildPack(filterType){
   const items=state.accepted.filter(function(x){return !filterType||x.type===filterType});
@@ -341,7 +364,7 @@ async function buildPack(filterType){
   const label=filterType?TYPE_LABEL[filterType]:"کامل";
   packStatus("در حال ساخت Pack "+label+" — 0 / "+items.length);
   const entries=[];
-  const report={engine_version:"0.5.1",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[]};
+  const report={engine_version:"0.5.2",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[]};
   const licenses={};
   const manifest=resultsPayload();manifest.items=items.map(cleanRecord);
   entries.push({path:"manifest.json",data:jsonBytes(manifest)});
@@ -378,8 +401,9 @@ async function buildPack(filterType){
   entries[1]={path:"report.json",data:jsonBytes(report)};
   packStatus("در حال نوشتن ZIP...");
   const blob=makeZip(entries);
-  saveBlob(blob,"Vibe-Pack-"+(filterType||"ALL")+"-"+dateStamp()+".zip");
-  packStatus("Pack "+label+" آماده شد. "+items.length+" آیتم؛ خطای دانلود مدیا: "+report.media_download_errors.length);
+  const packName="Vibe-Pack-"+(filterType||"ALL")+"-"+dateStamp()+".zip";
+  offerPackDownload(blob,packName,"Pack "+label+" آماده شد. "+items.length+" آیتم؛ خطای دانلود مدیا: "+report.media_download_errors.length+".");
+  document.getElementById("packStatus").scrollIntoView({behavior:"smooth",block:"center"});
 }
 
 async function tryAddRemote(entries,baseName,url,report,autoExt){
