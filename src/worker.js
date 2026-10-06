@@ -3,7 +3,7 @@ const JSON_HEADERS = {
   'cache-control': 'no-store',
 };
 
-const SOURCE_USER_AGENT = 'VibeContentEngine/0.5.1 (https://speakme.ir/)';
+const SOURCE_USER_AGENT = 'VibeContentEngine/0.5.2 (https://speakme.ir/)';
 
 function withSourceHeaders(url, options = {}) {
   const headers = new Headers(options.headers || {});
@@ -27,7 +27,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
-      if (url.pathname === '/api/health') return json({ ok: true, version: '0.5.1', now: new Date().toISOString() });
+      if (url.pathname === '/api/health') return json({ ok: true, version: '0.5.2', now: new Date().toISOString() });
       if (url.pathname === '/api/sources') return json({ sources: sourceRegistry(env) });
       if (url.pathname === '/api/proxy' && request.method === 'GET') return handleProxy(url, ctx);
       if (url.pathname === '/api/search') return handleSearch(url, env, ctx);
