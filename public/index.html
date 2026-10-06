@@ -47,7 +47,7 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
       <button data-view="manual"><span class="ico">⌕</span> جستجوی دستی</button>
       <button data-view="sources"><span class="ico">◫</span> منابع متصل</button>
     </div>
-    <div class="sidebox"><b><span class="dot"></span>نسخه 0.6.0 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
+    <div class="sidebox"><b><span class="dot"></span>نسخه 0.6.1 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
   </aside>
 
   <main class="main">
@@ -176,7 +176,7 @@ const TYPES = ["text","image","video","podcast","music"];
 const TYPE_LABEL = {text:"متن",image:"عکس",video:"ویدیو",podcast:"پادکست",music:"موسیقی"};
 const state = {
   running:false,cancelled:false,topics:[],accepted:[],rejected:[],review:[],
-  duplicates:0,errors:0,providerWarnings:0,seen:new Set(),topicStats:{},sources:[],importedTopics:[],topicMetaByQuery:{},universeMeta:null
+  duplicates:0,errors:0,providerWarnings:0,rejectionReasons:{},seen:new Set(),topicStats:{},sources:[],importedTopics:[],topicMetaByQuery:{},universeMeta:null
 };
 
 document.querySelectorAll(".nav button").forEach(function(btn){
@@ -319,7 +319,7 @@ function renderTopicRows(){
     const s=state.topicStats[topic]; const cells=TYPES.map(function(t){
       const x=s.types[t]; if(!x.want)return '<td>—</td>';
       const cls=x.got>=x.want?"ok":(x.status==="done"?"warn":"");
-      return '<td class="'+cls+'">'+x.got+" / "+x.want+"</td>";
+      return '<td class="'+cls+'" title="'+esc(x.note||"")+'"><span dir="ltr">'+x.got+" / "+x.want+"</span></td>";
     }).join("");
     const sc=s.status==="done"?"ok":s.status==="running"?"warn":"";
     const st=s.status==="done"?"تمام":s.status==="running"?"در حال پردازش":"در صف";
@@ -329,7 +329,7 @@ function renderTopicRows(){
 function esc(s){return String(s||"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function resetBatch(){
   if(state.running)return;
-  state.topics=[];state.accepted=[];state.rejected=[];state.review=[];state.duplicates=0;state.errors=0;state.providerWarnings=0;state.seen=new Set();state.topicStats={};state.topicMetaByQuery={};
+  state.topics=[];state.accepted=[];state.rejected=[];state.review=[];state.duplicates=0;state.errors=0;state.providerWarnings=0;state.rejectionReasons={};state.seen=new Set();state.topicStats={};state.topicMetaByQuery={};
   if(activePackUrl){URL.revokeObjectURL(activePackUrl);activePackUrl=null;}document.getElementById("batchProgress").style.width="0%";document.getElementById("jobState").textContent="Idle";setStatus("نتایج پاک شد.");packStatus("هنوز Pack ساخته نشده.");updateStats();renderTopicRows();
 }
 
@@ -381,7 +381,9 @@ async function startBatch(){
   }
   Object.keys(state.topicStats).forEach(function(k){if(state.topicStats[k].status!=="done")state.topicStats[k].status="done"});
   state.running=false;document.getElementById("startBatchBtn").disabled=false;document.getElementById("cancelBatchBtn").disabled=true;document.getElementById("jobState").textContent=state.cancelled?"Stopped":"Done";
-  setStatus(state.cancelled?"Batch متوقف شد. نتایج فعلی قابل دانلودند.":"Batch تمام شد. "+state.accepted.length+" Vibe کامل آماده Pack است. "+(state.providerWarnings?("هشدار منبع: "+state.providerWarnings):""));
+  const byType={};TYPES.forEach(function(t){byType[t]=state.accepted.filter(function(x){return x.type===t}).length});
+  const rejectText=Object.entries(state.rejectionReasons||{}).map(function(x){return x[0]+": "+x[1]}).join(" • ");
+  setStatus(state.cancelled?"Batch متوقف شد. نتایج فعلی قابل دانلودند.":"Batch تمام شد. "+state.accepted.length+" Vibe آماده است — متن "+byType.text+" • عکس "+byType.image+" • ویدیو "+byType.video+" • پادکست "+byType.podcast+" • موسیقی "+byType.music+(state.providerWarnings?(" • هشدار منبع "+state.providerWarnings):"")+(rejectText?(" • ردها: "+rejectText):""));
   renderTopicRows();updateStats();
 }
 
@@ -393,8 +395,11 @@ async function processTask(task){
   const ui=document.getElementById("uiLanguage").value;
   const searchLimit=Math.min(100,Math.max(task.want*3,10));
   const tm=task.meta||state.topicMetaByQuery[task.topic]||{};
-  const queries=[...(Array.isArray(tm.search_queries)?tm.search_queries:[]),task.topic].map(function(x){return String(x||"").trim()}).filter(Boolean);
-  const queryList=[...new Set(queries)].slice(0,4);
+  const extra=[];
+  if(task.type==="podcast"&&tm.cluster)extra.push(String(tm.cluster).replace(/_/g," "));
+  if(task.type==="music"&&tm.music&&tm.music.genre)extra.push(tm.music.genre);
+  const queries=[...extra,...(Array.isArray(tm.search_queries)?tm.search_queries:[]),task.topic].map(function(x){return String(x||"").trim()}).filter(Boolean);
+  const queryList=[...new Set(queries)].slice(0,5);
   let got=0;
   for(const searchQ of queryList){
     if(state.cancelled||got>=task.want)break;
@@ -410,14 +415,14 @@ async function processTask(task){
       try{
         const rr=await apiJson("/api/resolve",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(item)});
         const resolved=rr.item||item;
-        if(strictLanguage&&resolved.language&&langNorm(resolved.language)!==langNorm(learning)){state.rejected.push({topic:task.topic,reason:"language",item:resolved});continue}
+        if(strictLanguage&&resolved.language&&langNorm(resolved.language)!==langNorm(learning)){state.rejectionReasons.language=(state.rejectionReasons.language||0)+1;state.rejected.push({topic:task.topic,reason:"language",item:resolved});continue}
         const pr=await apiJson("/api/prepare",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({item:resolved,learning_language:learning,ui_language:ui})});
         const prepared=pr.prepared;
-        if(!prepared||prepared.completeness<100||prepared.source&&prepared.source.commercial_ok===false){
-          state.rejected.push({topic:task.topic,reason:"incomplete_or_rights",item:prepared||resolved});continue
+        if(!prepared||prepared.completeness<100||prepared.quality_ok===false||prepared.source&&prepared.source.commercial_ok===false){
+          const rrKey=!prepared?"prepare_missing":(prepared.source&&prepared.source.commercial_ok===false?"rights_blocked":(prepared.quality_ok===false?(prepared.quality_issues&&prepared.quality_issues[0]||"quality"):"incomplete"));state.rejectionReasons[rrKey]=(state.rejectionReasons[rrKey]||0)+1;state.rejected.push({topic:task.topic,reason:rrKey,item:prepared||resolved});continue
         }
         if(prepared.source&&prepared.source.review_required&&!includeReview){
-          state.rejected.push({topic:task.topic,reason:"rights_review",item:prepared});continue
+          state.rejectionReasons.rights_review=(state.rejectionReasons.rights_review||0)+1;state.rejected.push({topic:task.topic,reason:"rights_review",item:prepared});continue
         }
         const record=Object.assign({},prepared,{
           topic:task.topic,
@@ -434,7 +439,7 @@ async function processTask(task){
         state.accepted.push(record);
         if(record.source&&record.source.review_required)state.review.push(record);
         got++;
-      }catch(err){state.errors++;state.rejected.push({topic:task.topic,reason:"error",error:String(err&&err.message||err),item:item})}
+      }catch(err){state.errors++;state.rejectionReasons.error=(state.rejectionReasons.error||0)+1;state.rejected.push({topic:task.topic,reason:"error",error:String(err&&err.message||err),item:item})}
     }
   }
   const ts=state.topicStats[task.topic].types[task.type];ts.got=got;ts.status="done";
@@ -449,10 +454,10 @@ function cleanRecord(x){
 }
 function resultsPayload(){
   return {
-    engine_version:"0.6.0",
+    engine_version:"0.6.1",
     created_at:new Date().toISOString(),
     config:{learning_language:document.getElementById("learningLanguage").value,ui_language:document.getElementById("uiLanguage").value,counts:countsConfig(),topics:state.topics,pool_filter:document.getElementById("poolFilter").value,max_topics:Number(document.getElementById("maxTopics").value)||0,respect_type_fit:document.getElementById("respectTypeFit").checked,topic_universe_version:state.universeMeta&&state.universeMeta.version||null},
-    counts:{accepted:state.accepted.length,rejected:state.rejected.length,review:state.review.length,duplicates:state.duplicates,errors:state.errors,provider_warnings:state.providerWarnings||0},
+    counts:{accepted:state.accepted.length,rejected:state.rejected.length,review:state.review.length,duplicates:state.duplicates,errors:state.errors,provider_warnings:state.providerWarnings||0,rejection_reasons:state.rejectionReasons||{}},
     items:state.accepted.map(cleanRecord)
   };
 }
@@ -493,7 +498,7 @@ async function buildPack(filterType){
   const label=filterType?TYPE_LABEL[filterType]:"کامل";
   packStatus("در حال ساخت Pack "+label+" — 0 / "+items.length);
   const entries=[];
-  const report={engine_version:"0.6.0",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[]};
+  const report={engine_version:"0.6.1",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[]};
   const licenses={};
   const manifest=resultsPayload();manifest.items=items.map(cleanRecord);
   entries.push({path:"manifest.json",data:jsonBytes(manifest)});
