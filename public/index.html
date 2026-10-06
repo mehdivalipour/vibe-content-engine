@@ -1,146 +1,464 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="color-scheme" content="light" />
-<title>Vibe Content Engine</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Vibe Content Factory</title>
 <style>
 :root{
-  --bg:#f6f7fb;--card:#fff;--ink:#151827;--muted:#798096;--line:#e8eaf0;
-  --nav:#171a29;--orange:#ff5a24;--orange-soft:#fff0e9;--blue:#6d76d8;--blue-soft:#eef0ff;
-  --green:#21875d;--green-soft:#e9f8f1;--amber:#a86b12;--amber-soft:#fff5df;--red:#c94b55;--red-soft:#fff0f1;
-  --shadow:0 18px 55px rgba(28,32,58,.08);--radius:24px;
+  --bg:#f6f7fb;--card:#fff;--ink:#151827;--muted:#7c8398;--line:#e7e9f0;
+  --nav:#171a29;--orange:#ff5a24;--orange2:#ff835c;--orange-soft:#fff0e9;
+  --blue:#6975d7;--green:#20885d;--green-soft:#e9f8f1;--red:#c64c56;--red-soft:#fff0f1;
+  --amber:#a66a16;--amber-soft:#fff5df;--shadow:0 18px 55px rgba(28,32,58,.08);
 }
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:inherit}
-.app{min-height:100vh;display:grid;grid-template-columns:250px minmax(0,1fr)}
-.sidebar{position:sticky;top:0;height:100vh;background:linear-gradient(180deg,#161927,#11131e);color:#fff;padding:24px 18px;display:flex;flex-direction:column;overflow:auto}
-.brand{display:flex;align-items:center;gap:11px;margin-bottom:28px}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#ff8257,#ff4f17);display:grid;place-items:center;font-size:19px;font-weight:800;box-shadow:0 12px 30px rgba(255,90,36,.28)}.brand h1{font-size:16px;margin:0}.brand small{display:block;color:#8d93aa;font-size:10px;margin-top:4px;letter-spacing:.08em}
-.side-title{font-size:10px;color:#727890;margin:8px 10px}.menu{display:flex;flex-direction:column;gap:7px}.menu button{border:0;background:transparent;color:#b9bfd1;border-radius:13px;padding:11px 12px;text-align:right;display:flex;gap:10px;align-items:center}.menu button:hover,.menu button.active{background:#23283b;color:#fff}.menu .ico{width:28px;height:28px;border-radius:9px;background:#30364d;display:grid;place-items:center}.menu button.active .ico{background:var(--orange)}
-.side-status{margin-top:auto;border:1px solid #2d3247;background:#1d2132;border-radius:18px;padding:14px}.side-status b{font-size:12px}.side-status p{color:#9fa6bb;font-size:11px;line-height:1.7;margin:7px 0 0}.live-dot{display:inline-block;width:8px;height:8px;background:#38d58c;border-radius:50%;margin-left:6px}
-.main{padding:26px 30px 46px;min-width:0}.top{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:18px}.title h2{font-size:26px;margin:0 0 6px}.title p{font-size:13px;color:var(--muted);margin:0}.actions{display:flex;gap:9px}.btn{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 14px;color:#4f566b}.btn.dark{background:#181c2d;color:#fff;border-color:#181c2d}.btn.orange{background:var(--orange);border-color:var(--orange);color:#fff}.btn:disabled{opacity:.45;cursor:not-allowed}
-.hero{background:linear-gradient(135deg,#1d2136,#303653 56%,#553d6a);color:#fff;border-radius:28px;padding:23px 26px;box-shadow:var(--shadow);overflow:hidden;position:relative;margin-bottom:16px}.hero:after{content:"";position:absolute;width:330px;height:330px;background:radial-gradient(circle,rgba(255,120,75,.52),rgba(255,120,75,0) 65%);left:-90px;top:-180px}.hero>div{position:relative;z-index:1}.hero small{color:#ffae93;font-weight:700;letter-spacing:.09em}.hero h3{font-size:22px;margin:7px 0 9px}.hero p{margin:0;color:#cbd0e0;font-size:12px;line-height:1.85;max-width:870px}.pipeline{display:flex;gap:7px;flex-wrap:wrap;margin-top:16px}.pipe{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.08);border-radius:99px;padding:6px 10px;font-size:11px;color:#e9ecf7}
-.types{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:16px}.type{border:1px solid var(--line);background:#fff;border-radius:18px;padding:13px 14px;text-align:right;display:flex;gap:11px;align-items:center}.type:hover{box-shadow:0 9px 28px rgba(25,30,55,.05)}.type.active{background:linear-gradient(180deg,#fff,#fff8f4);border-color:#ffd4c3}.type-ico{width:39px;height:39px;border-radius:13px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font-size:17px}.type.active .type-ico{background:var(--orange-soft);color:var(--orange)}.type b{display:block;font-size:13px}.type span{font-size:10px;color:var(--muted)}
-.workspace{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:15px;align-items:start}.panel{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:0 8px 28px rgba(26,30,55,.035)}.panel-head{padding:17px 18px 13px;border-bottom:1px solid #f0f1f5;display:flex;justify-content:space-between;gap:12px;align-items:center}.panel-head h3{font-size:16px;margin:0 0 3px}.panel-head p{font-size:10px;color:var(--muted);margin:0}.small-badge{font-size:10px;padding:5px 8px;border-radius:99px;background:var(--blue-soft);color:var(--blue)}
-.searchbar{padding:14px 16px;border-bottom:1px solid #f1f2f5;display:grid;grid-template-columns:minmax(200px,1fr) 170px 100px auto;gap:8px}.field-control{border:1px solid var(--line);border-radius:12px;background:#fafafd;display:flex;align-items:center;padding:0 10px}.field-control input{width:100%;border:0;outline:0;background:transparent;padding:10px 5px}.searchbar select{border:1px solid var(--line);border-radius:12px;background:#fafafd;padding:0 9px;outline:0;color:#52596c}.safe{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);border-radius:12px;background:#fafafd;font-size:10px;color:#61677b}.safe input{accent-color:var(--orange)}
-.providers{padding:11px 16px 0;display:flex;gap:6px;flex-wrap:wrap}.provider-state{font-size:9px;padding:5px 8px;border-radius:99px;background:#f5f6f9;color:#777e90}.provider-state.ok{background:var(--green-soft);color:var(--green)}.provider-state.bad{background:var(--red-soft);color:var(--red)}
-.results{padding:13px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-height:240px}.result{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#fff;display:flex;flex-direction:column;min-height:255px;transition:.16s}.result:hover{transform:translateY(-1px);box-shadow:0 12px 30px rgba(27,32,57,.06)}.thumb{height:150px;background:linear-gradient(135deg,#eff1ff,#fcece6);position:relative;overflow:hidden;display:grid;place-items:center}.thumb img{width:100%;height:100%;object-fit:cover}.thumb .glyph{font-size:34px;opacity:.55}.media-pill{position:absolute;top:9px;right:9px;background:rgba(20,23,36,.72);color:#fff;border-radius:99px;padding:5px 8px;font-size:9px;backdrop-filter:blur(10px)}.result-body{padding:13px;display:flex;flex-direction:column;gap:8px;flex:1}.result h4{margin:0;font-size:13px;line-height:1.5}.result .desc{font-size:10px;color:#747b8e;line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.meta{display:flex;gap:5px;flex-wrap:wrap}.chip{font-size:9px;border-radius:99px;padding:4px 7px;background:#f3f4f8;color:#6d7385}.chip.good{background:var(--green-soft);color:var(--green)}.chip.warn{background:var(--amber-soft);color:var(--amber)}.result-actions{display:flex;gap:7px;margin-top:auto}.mini-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 9px;font-size:10px;color:#545b70}.mini-btn.primary{background:#191d2e;color:#fff;border-color:#191d2e}.empty{grid-column:1/-1;text-align:center;padding:55px 20px;color:#9aa0b1}.empty b{display:block;color:#5f667b;font-size:14px;margin-bottom:6px}
-.inspector{position:sticky;top:18px;display:flex;flex-direction:column;gap:11px}.inspect{padding:16px}.inspect h3{margin:0;font-size:16px}.inspect>p{font-size:10px;color:var(--muted);line-height:1.7;margin:7px 0 13px}.placeholder{border:1px dashed #d9dce6;border-radius:18px;padding:28px 15px;text-align:center;color:#9a9fb0;font-size:11px}.preview{border-radius:20px;overflow:hidden;background:#f7f7fb;border:1px solid #eceef4}.preview-media{height:180px;display:grid;place-items:center;background:linear-gradient(135deg,#ffb18e,#b58cdf 55%,#6575cf);color:#fff;position:relative}.preview-media img{width:100%;height:100%;object-fit:cover}.preview-content{padding:14px}.preview-content b{display:block;font-size:14px;line-height:1.5}.preview-content p{font-size:10px;color:#747b8e;line-height:1.7;margin:6px 0 0}.schema-list{display:grid;gap:6px;margin-top:12px}.schema-row{border:1px solid #eef0f4;border-radius:11px;padding:8px 9px;background:#fbfbfd;display:flex;justify-content:space-between;gap:8px;align-items:center}.schema-row code{font-size:9px;color:#50566c;direction:ltr}.schema-row span{font-size:9px;color:#9a9fb0}.inspect-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.inspect-actions button{border:1px solid var(--line);background:#fff;border-radius:11px;padding:9px;font-size:10px}.inspect-actions button.primary{background:var(--orange);border-color:var(--orange);color:#fff}.inspect-actions button.dark{background:#181c2d;border-color:#181c2d;color:#fff}
-.toast{position:fixed;left:22px;bottom:22px;background:#181c2d;color:#fff;border-radius:14px;padding:11px 14px;font-size:11px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);pointer-events:none;transition:.2s;z-index:40}.toast.show{opacity:1;transform:none}
-.drawer{position:fixed;inset:0;background:rgba(15,18,30,.28);z-index:50;display:none;align-items:stretch;justify-content:flex-start}.drawer.show{display:flex}.drawer-panel{width:min(620px,94vw);height:100%;background:#fff;padding:20px;overflow:auto;box-shadow:20px 0 60px rgba(15,18,30,.17)}.drawer-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.drawer-head h3{margin:0}.close{border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 10px}.draft{border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:9px}.draft h4{margin:0 0 5px;font-size:13px}.draft p{font-size:10px;color:var(--muted);margin:0 0 8px}.draft .row{display:flex;gap:7px}.draft .row button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 9px;font-size:9px}.draft .row .danger{color:var(--red)}
-.source-grid{padding:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.source-card{border:1px solid var(--line);border-radius:17px;padding:13px}.source-card h4{font-size:13px;margin:0}.source-card p{font-size:10px;color:var(--muted);line-height:1.65;min-height:48px}.source-card .row{display:flex;justify-content:space-between;gap:7px;align-items:center}.status{font-size:9px;border-radius:99px;padding:5px 7px;background:var(--green-soft);color:var(--green)}.status.off{background:var(--amber-soft);color:var(--amber)}
-.setup{padding:18px}.setup h3{margin:0 0 7px}.setup p{font-size:11px;color:var(--muted);line-height:1.8}.config-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:13px 0}.config{border:1px solid var(--line);border-radius:15px;padding:12px}.config b{font-size:12px;display:block}.config span{font-size:10px;color:var(--muted)}pre{direction:ltr;text-align:left;background:#171a29;color:#dfe4f3;border-radius:15px;padding:14px;overflow:auto;font-size:11px;line-height:1.7}
-.hidden{display:none!important}
-@media(max-width:1150px){.app{grid-template-columns:1fr}.sidebar{display:none}.workspace{grid-template-columns:1fr}.inspector{position:static}.types{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:760px){.main{padding:16px}.top{flex-direction:column;align-items:flex-start}.types{grid-template-columns:repeat(2,1fr)}.searchbar{grid-template-columns:1fr 1fr}.searchbar .field-control{grid-column:1/-1}.results,.source-grid{grid-template-columns:1fr}.workspace{display:block}.inspector{margin-top:12px}.hero h3{font-size:18px}.config-grid{grid-template-columns:1fr}.actions{width:100%}.actions .btn{flex:1}}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.app{min-height:100vh;display:grid;grid-template-columns:250px minmax(0,1fr)}
+.sidebar{height:100vh;position:sticky;top:0;background:linear-gradient(180deg,#171a29,#11131e);color:#fff;padding:22px 17px;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:26px}.logo{width:43px;height:43px;border-radius:14px;background:linear-gradient(145deg,var(--orange2),var(--orange));display:grid;place-items:center;font-weight:900;font-size:20px;box-shadow:0 12px 28px rgba(255,90,36,.25)}.brand h1{font-size:15px;margin:0}.brand small{color:#8990a8;font-size:10px;letter-spacing:.07em}
+.side-title{font-size:10px;color:#6f768d;margin:8px 10px}.nav{display:flex;flex-direction:column;gap:7px}.nav button{border:0;background:transparent;color:#b9bfd0;border-radius:13px;padding:10px 11px;text-align:right;display:flex;align-items:center;gap:9px}.nav button.active,.nav button:hover{background:#252a3e;color:#fff}.ico{width:29px;height:29px;border-radius:9px;background:#30364d;display:grid;place-items:center}.nav button.active .ico{background:var(--orange)}
+.sidebox{margin-top:auto;border:1px solid #2e3349;background:#1e2233;border-radius:17px;padding:14px}.sidebox b{font-size:12px}.sidebox p{font-size:10px;line-height:1.8;color:#a2a8bb;margin:7px 0 0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#3bd48d;margin-left:6px}
+.main{padding:25px 30px 45px;min-width:0}.top{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:17px}.top h2{margin:0 0 5px;font-size:26px}.top p{margin:0;color:var(--muted);font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#fff;color:#4d5469;border-radius:12px;padding:10px 14px}.btn.dark{background:#181c2d;color:#fff;border-color:#181c2d}.btn.orange{background:var(--orange);border-color:var(--orange);color:#fff}.btn.red{background:#fff1f2;color:#b5454d;border-color:#ffd7da}.btn:disabled{opacity:.45;cursor:not-allowed}
+.hero{background:linear-gradient(135deg,#1e2237,#313852 58%,#553e6a);border-radius:26px;color:#fff;padding:22px 25px;box-shadow:var(--shadow);margin-bottom:15px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:340px;height:340px;left:-110px;top:-200px;background:radial-gradient(circle,rgba(255,118,71,.55),transparent 65%)}.hero>*{position:relative;z-index:1}.hero small{color:#ffad91;font-weight:800;letter-spacing:.09em}.hero h3{font-size:21px;margin:7px 0}.hero p{color:#cbd0df;font-size:11px;line-height:1.9;margin:0;max-width:920px}.pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.pill{padding:6px 10px;border-radius:99px;background:rgba(255,255,255,.09);font-size:10px;color:#e8eaf4;border:1px solid rgba(255,255,255,.08)}
+.view{display:none}.view.active{display:block}.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(310px,.65fr);gap:15px}.panel{background:var(--card);border:1px solid var(--line);border-radius:21px;box-shadow:var(--shadow);overflow:hidden}.ph{padding:17px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}.ph h3{font-size:15px;margin:0}.ph p{margin:4px 0 0;color:var(--muted);font-size:10px}.pb{padding:17px 18px}
+label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#4d5367}textarea,input[type=text],input[type=number],select{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 11px;outline:none;color:var(--ink)}textarea{min-height:215px;resize:vertical;line-height:1.75}textarea:focus,input:focus,select:focus{border-color:#bcc2ee;box-shadow:0 0 0 3px #f0f1ff}
+.upload{margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.upload input{font-size:11px}
+.counts{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:13px}.count{border:1px solid var(--line);border-radius:14px;padding:10px}.count b{display:block;font-size:11px;margin-bottom:6px}.count small{color:var(--muted);font-size:9px}.count input{margin-top:7px;padding:8px;text-align:center}
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px}.checkrow{display:flex;align-items:center;gap:8px;font-size:11px;color:#51586d;margin-top:11px}.checkrow input{accent-color:var(--orange)}
+.batch-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.progress{height:10px;background:#eceef4;border-radius:99px;overflow:hidden;margin-top:15px}.progress>div{height:100%;width:0;background:linear-gradient(90deg,var(--orange),#ff9a78);transition:.25s}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{border:1px solid var(--line);border-radius:15px;padding:12px;text-align:center}.stat b{font-size:20px;display:block}.stat span{font-size:9px;color:var(--muted)}
+.statusline{margin-top:12px;padding:10px 11px;border-radius:12px;background:#f7f8fb;font-size:10px;color:#61687c;line-height:1.7}
+.pack-buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.pack-buttons button{font-size:10px;padding:8px 10px}
+.tablewrap{margin-top:15px;background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:var(--shadow)}table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:10px 11px;text-align:right;border-bottom:1px solid #f0f1f5}th{background:#fafbfc;color:#73798c;font-weight:700}tr:last-child td{border-bottom:0}.ok{color:var(--green);font-weight:800}.warn{color:var(--amber);font-weight:800}.bad{color:var(--red);font-weight:800}
+.manualbar{display:grid;grid-template-columns:1.6fr .7fr .7fr auto;gap:8px}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.result{border:1px solid var(--line);background:#fff;border-radius:16px;padding:12px;min-height:115px}.result h4{font-size:12px;margin:0 0 7px}.result p{font-size:9px;color:var(--muted);line-height:1.7;margin:0}.result small{display:block;margin-top:8px;color:#666e85}
+.sources{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.source{background:#fff;border:1px solid var(--line);border-radius:17px;padding:14px}.source h4{margin:0 0 5px;font-size:12px}.source p{font-size:9px;color:var(--muted);line-height:1.7}.tag{display:inline-block;padding:4px 7px;border-radius:99px;background:#f0f2f8;font-size:8px;margin:2px}.tag.live{background:var(--green-soft);color:var(--green)}.tag.off{background:var(--red-soft);color:var(--red)}
+.note{font-size:9px;color:var(--muted);line-height:1.8;margin-top:8px}.empty{text-align:center;color:#9298a9;padding:35px 10px;font-size:11px}
+@media(max-width:1050px){.app{grid-template-columns:1fr}.sidebar{height:auto;position:relative}.nav{flex-direction:row;overflow:auto}.sidebox{display:none}.grid{grid-template-columns:1fr}.counts{grid-template-columns:repeat(2,1fr)}.results,.sources{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.main{padding:16px}.top{align-items:flex-start;flex-direction:column}.counts,.settings,.stats,.results,.sources{grid-template-columns:1fr}.manualbar{grid-template-columns:1fr}.hero h3{font-size:18px}}
 </style>
 </head>
 <body>
 <div class="app">
   <aside class="sidebar">
-    <div class="brand"><div class="logo">M</div><div><h1>Vibe Content Engine</h1><small>ME • CONTENT OPERATIONS</small></div></div>
+    <div class="brand"><div class="logo">M</div><div><h1>Vibe Content Factory</h1><small>ME • CONTENT OPERATIONS</small></div></div>
     <div class="side-title">ابزارها</div>
-    <div class="menu">
-      <button class="active" data-view="discover"><span class="ico">⌕</span>جستجو و دریافت</button>
-      <button data-view="sources"><span class="ico">◫</span>منابع متصل</button>
-      <button data-view="drafts"><span class="ico">✦</span>Draftهای آماده <span id="draftCountSide" style="margin-right:auto">0</span></button>
-      <button data-view="setup"><span class="ico">⚙</span>تنظیم اتصال‌ها</button>
+    <div class="nav">
+      <button class="active" data-view="batch"><span class="ico">▦</span> کارخانه Batch</button>
+      <button data-view="manual"><span class="ico">⌕</span> جستجوی دستی</button>
+      <button data-view="sources"><span class="ico">◫</span> منابع متصل</button>
     </div>
-    <div class="side-status"><b><span class="live-dot"></span>نسخه 0.4.2 بدون AI</b><p>جستجوی واقعی، Resolve رسانه/متن، Rule Engine، بررسی کامل بودن Vibe و Draft فعال است. هیچ LLM یا AI تولیدی استفاده نمی‌شود.</p></div>
+    <div class="sidebox"><b><span class="dot"></span>نسخه 0.5.0 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
   </aside>
 
   <main class="main">
     <div class="top">
-      <div class="title"><h2 id="viewTitle">موتور محتوای Vibe</h2><p id="viewSubtitle">از منابع آزاد جستجو کن، نتیجه را به فرم نهایی Vibe تبدیل کن و Draft بگیر.</p></div>
-      <div class="actions"><button class="btn" id="openDrafts">Draftها <b id="draftCountTop">0</b></button><button class="btn dark" id="exportBtn">خروجی JSON</button></div>
+      <div><h2>موتور محتوای Vibe</h2><p>از صدها موضوع به یک Pack استاندارد و آماده تحویل به اپ Me.</p></div>
+      <div class="actions"><button class="btn" id="downloadManifestBtn" disabled>JSON نتایج</button><button class="btn dark" id="downloadFullPackBtn" disabled>دانلود Pack کامل</button></div>
     </div>
 
-    <div id="discoverView">
-      <section class="hero"><div><small>LIVE CONTENT PIPELINE</small><h3>منبع واقعی → محتوای انتخاب‌شده → اطلاعات لازم UI → Draft آماده انتشار</h3><p>پنج فرمت Vibe دقیقاً با همان UIهایی که طراحی کردی مدل شده‌اند. موتور URL، مجوز، عنوان، توضیح، فایل رسانه و Metadata را از منبع می‌گیرد و بدون AI با Rule Engine، زمان مطالعه، دسته‌بندی، Keywordها، Theme و وضعیت کامل‌بودن Vibe را می‌سازد. ترجمه فقط هنگام درخواست کاربر انجام و Cache می‌شود.</p><div class="pipeline"><span class="pipe">Source API</span><span class="pipe">License</span><span class="pipe">Resolve media</span><span class="pipe">Rule Engine</span><span class="pipe">Vibe schema</span><span class="pipe">Draft</span></div></div></section>
-      <div class="types" id="types"></div>
-      <div class="workspace">
-        <section class="panel">
-          <div class="panel-head"><div><h3 id="resultsTitle">جستجوی محتوا</h3><p>جستجو مستقیم از API و فید رسمی منابع انجام می‌شود.</p></div><span class="small-badge" id="resultCount">0 نتیجه</span></div>
-          <div class="searchbar">
-            <div class="field-control">⌕<input id="query" placeholder="مثلاً habits, coffee, travel, space..." /></div>
-            <select id="sourceSelect"></select>
-            <select id="limitSelect"><option value="12">12 نتیجه</option><option value="24" selected>24 نتیجه</option><option value="50">50 نتیجه</option><option value="100">100 نتیجه</option></select>
-            <label class="safe"><input type="checkbox" id="safeOnly" checked />مجوز امن‌تر</label>
+    <section class="hero">
+      <small>BATCH CONTENT PIPELINE</small>
+      <h3>Topics → Search → Resolve → Rules → Validate → Deduplicate → Pack</h3>
+      <p>به جای جستجوی تک به تک، صدها موضوع را Paste یا Upload کن. برای هر نوع Vibe تعداد مورد نظر را تعیین کن. موتور از منابع سازگار می‌گردد، موارد ناقص و تکراری را جدا می‌کند و در پایان JSON و فایل‌های واقعی را در ZIP استاندارد می‌چیند.</p>
+      <div class="pills"><span class="pill">No AI</span><span class="pill">5 Vibe Types</span><span class="pill">Safe Source Proxy</span><span class="pill">Per-topic Quota</span><span class="pill">ZIP Pack</span></div>
+    </section>
+
+    <section class="view active" id="view-batch">
+      <div class="grid">
+        <div class="panel">
+          <div class="ph"><div><h3>Batch جدید</h3><p>هر خط یک موضوع. CSV / TXT / JSON هم می‌توانی وارد کنی.</p></div><span class="tag live">Factory</span></div>
+          <div class="pb">
+            <label class="lbl">موضوعات</label>
+            <textarea id="topicsInput" placeholder="coffee&#10;travel&#10;space&#10;friendship&#10;psychology"></textarea>
+            <div class="upload"><input type="file" id="topicsFile" accept=".txt,.csv,.json,text/plain,application/json,text/csv"><span class="note">در JSON یک آرایه از رشته‌ها کافی است.</span></div>
+
+            <div class="counts">
+              <div class="count"><b>متن</b><small>Text / article / story</small><input id="count-text" type="number" min="0" max="25" value="10"></div>
+              <div class="count"><b>عکس + متن</b><small>Image Vibe</small><input id="count-image" type="number" min="0" max="25" value="5"></div>
+              <div class="count"><b>ویدیو</b><small>Video Vibe</small><input id="count-video" type="number" min="0" max="25" value="3"></div>
+              <div class="count"><b>پادکست</b><small>Podcast Vibe</small><input id="count-podcast" type="number" min="0" max="25" value="2"></div>
+              <div class="count"><b>موسیقی</b><small>Music Vibe</small><input id="count-music" type="number" min="0" max="25" value="2"></div>
+            </div>
+
+            <div class="settings">
+              <div><label class="lbl">زبان محتوای آموزشی</label><select id="learningLanguage"><option value="en">English</option><option value="de">German</option><option value="tr">Turkish</option><option value="ar">Arabic</option><option value="fr">French</option><option value="es">Spanish</option><option value="it">Italian</option></select></div>
+              <div><label class="lbl">زبان ترجمه رابط</label><select id="uiLanguage"><option value="fa">فارسی</option><option value="en">English</option><option value="tr">Türkçe</option><option value="ar">العربية</option></select></div>
+            </div>
+
+            <label class="checkrow"><input type="checkbox" id="safeSearch" checked> جستجوی مجوز امن‌تر در منابعی که فیلتر مجوز دارند</label>
+            <label class="checkrow"><input type="checkbox" id="includeReview" checked> موارد کامل ولی نیازمند بررسی نهایی مجوز را هم نگه دار</label>
+            <label class="checkrow"><input type="checkbox" id="strictLanguage"> اگر زبان منبع مشخص است، فقط زبان انتخاب‌شده را قبول کن</label>
+
+            <div class="batch-actions">
+              <button class="btn orange" id="startBatchBtn">شروع Batch</button>
+              <button class="btn red" id="cancelBatchBtn" disabled>توقف</button>
+              <button class="btn" id="resetBatchBtn">پاک کردن نتایج</button>
+            </div>
+            <div class="progress"><div id="batchProgress"></div></div>
+            <div class="statusline" id="batchStatus">هنوز Batch شروع نشده.</div>
           </div>
-          <div class="providers" id="providers"></div>
-          <div style="padding:10px 16px 0;display:flex;gap:8px"><button class="btn orange" id="searchBtn">جستجو در منابع</button><button class="btn" id="clearBtn">پاک کردن</button></div>
-          <div class="results" id="results"><div class="empty"><b>یک موضوع جستجو کن</b>مثلاً برای عکس «coffee»، برای ویدیو «Italy»، برای پادکست «Sherlock».</div></div>
-        </section>
-        <aside class="inspector">
-          <section class="panel inspect"><h3>آماده‌سازی برای Vibe</h3><p>یک نتیجه را انتخاب کن. این بخش دقیقاً فیلدهای لازم برای UI نهایی را می‌سازد.</p><div id="inspectorBody" class="placeholder">هنوز محتوایی انتخاب نشده.</div></section>
-          <section class="panel inspect"><h3>زبان خروجی</h3><p>رسانه با زبان اصلی خودش نگه‌داری می‌شود. ترجمه از قبل تولید نمی‌شود؛ دکمه Translate در اپ آن را On-demand می‌سازد و Cache می‌کند.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><select id="learnLang" class="btn"><option value="en">English</option><option value="de">German</option><option value="tr">Turkish</option><option value="ar">Arabic</option></select><select id="uiLang" class="btn"><option value="fa">ترجمه فارسی</option><option value="en">English UI</option><option value="tr">Türkçe UI</option></select></div></section>
-        </aside>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><div><h3>خروجی Batch</h3><p>فقط Vibeهای کامل وارد Pack می‌شوند.</p></div><span class="tag" id="jobState">Idle</span></div>
+          <div class="pb">
+            <div class="stats">
+              <div class="stat"><b id="statTopics">0</b><span>موضوع</span></div>
+              <div class="stat"><b id="statAccepted">0</b><span>قبول شده</span></div>
+              <div class="stat"><b id="statRejected">0</b><span>رد / ناقص</span></div>
+              <div class="stat"><b id="statReview">0</b><span>نیازمند Review</span></div>
+              <div class="stat"><b id="statDuplicates">0</b><span>تکراری</span></div>
+              <div class="stat"><b id="statErrors">0</b><span>خطا</span></div>
+            </div>
+            <div class="pack-buttons">
+              <button class="btn" data-pack-type="text" disabled>ZIP متن</button>
+              <button class="btn" data-pack-type="image" disabled>ZIP عکس</button>
+              <button class="btn" data-pack-type="video" disabled>ZIP ویدیو</button>
+              <button class="btn" data-pack-type="podcast" disabled>ZIP پادکست</button>
+              <button class="btn" data-pack-type="music" disabled>ZIP موسیقی</button>
+            </div>
+            <div class="statusline" id="packStatus">ساختار Pack: manifest.json + report.json + licenses.json + پوشه json + پوشه‌های text / image / video / podcast / music.</div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div id="sourcesView" class="hidden"><section class="panel"><div class="panel-head"><div><h3>منابع ۵ دسته</h3><p>منابع دارای Connector واقعی یا کلید اختیاری.</p></div></div><div class="source-grid" id="sourceGrid"></div></section></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>موضوع</th><th>متن</th><th>عکس</th><th>ویدیو</th><th>پادکست</th><th>موسیقی</th><th>وضعیت</th></tr></thead>
+          <tbody id="topicRows"><tr><td colspan="7" class="empty">بعد از شروع Batch، نتیجه هر موضوع اینجا دیده می‌شود.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
 
-    <div id="setupView" class="hidden"><section class="panel setup"><h3>اتصال‌های اختیاری</h3><p>موتور بدون ثبت‌نام با Gutenberg، Wikisource، Wikimedia، NASA، LibriVox و Internet Archive کار می‌کند. برای Smithsonian و Pixabay فقط Secret اضافه می‌شود. این نسخه هیچ اتصال Gemini/OpenAI یا LLM ندارد.</p><div class="config-grid" id="configGrid"></div><h3 style="margin-top:22px">دستورهای Cloudflare</h3><pre>npm install
-# منابع اختیاری
-npx wrangler secret put SI_API_KEY
-npx wrangler secret put PIXABAY_API_KEY
+    <section class="view" id="view-manual">
+      <div class="panel">
+        <div class="ph"><div><h3>جستجوی دستی</h3><p>برای تست Connectorها و بررسی یک موضوع خاص.</p></div></div>
+        <div class="pb">
+          <div class="manualbar">
+            <input id="manualQ" type="text" placeholder="مثلا Sherlock Holmes">
+            <select id="manualType"><option value="text">متن</option><option value="image">عکس</option><option value="video">ویدیو</option><option value="podcast">پادکست</option><option value="music">موسیقی</option></select>
+            <select id="manualSource"><option value="all">همه منابع سازگار</option></select>
+            <button class="btn orange" id="manualSearchBtn">جستجو</button>
+          </div>
+          <div class="results" id="manualResults"><div class="empty">یک جستجو انجام بده.</div></div>
+        </div>
+      </div>
+    </section>
 
-# انتشار
-npm run deploy</pre></section></div>
+    <section class="view" id="view-sources">
+      <div class="sources" id="sourcesGrid"><div class="empty">در حال دریافت منابع...</div></div>
+    </section>
   </main>
 </div>
 
-<div class="drawer" id="drawer"><div class="drawer-panel"><div class="drawer-head"><div><h3>Draftهای Vibe</h3><small style="color:var(--muted)">فعلاً روی همین مرورگر ذخیره می‌شوند.</small></div><button class="close" id="closeDrawer">بستن</button></div><div id="draftList"></div></div></div>
-<div class="toast" id="toast"></div>
-
 <script>
-const typeDefs={
- text:{label:'متن',icon:'Aa',sub:'کتاب، داستان، مقاله',schema:['category_label','title','body','keywords[]','read_time_min','translation_mode']},
- image:{label:'عکس + متن',icon:'▧',sub:'عکس با عنوان و توضیح',schema:['media_url','title','description','read_time_min','translation_mode']},
- video:{label:'ویدیو',icon:'▶',sub:'ویدیو، عنوان، توضیح',schema:['category_label','media_url','poster_url','duration_sec','title','description','subtitle_url','translation_mode']},
- podcast:{label:'پادکست',icon:'◉',sub:'صوت، توضیح، Transcript',schema:['category_label','media_url','duration_sec','title','description','transcript','theme','translation_mode']},
- music:{label:'موسیقی',icon:'♫',sub:'Track، کاور، پلیر',schema:['category_label','media_url','poster_url','duration_sec','title','description','theme']}
+const TYPES = ["text","image","video","podcast","music"];
+const TYPE_LABEL = {text:"متن",image:"عکس",video:"ویدیو",podcast:"پادکست",music:"موسیقی"};
+const state = {
+  running:false,cancelled:false,topics:[],accepted:[],rejected:[],review:[],
+  duplicates:0,errors:0,seen:new Set(),topicStats:{},sources:[]
 };
-let state={type:'text',sources:[],items:[],selected:null,prepared:null,config:{},view:'discover'};
-const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
-function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function fmtDuration(sec){sec=Number(sec||0);if(!sec)return ''; const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=Math.floor(sec%60);return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`}
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
-function drafts(){try{return JSON.parse(localStorage.getItem('vibe_drafts')||'[]')}catch{return[]}}
-function saveDrafts(v){localStorage.setItem('vibe_drafts',JSON.stringify(v));refreshDraftCount()}
-function refreshDraftCount(){const n=drafts().length;$('#draftCountSide').textContent=n;$('#draftCountTop').textContent=n}
 
-async function api(path,opts={}){const r=await fetch(path,opts);const d=await r.json();if(!r.ok)throw new Error(d.error||`HTTP ${r.status}`);return d}
+document.querySelectorAll(".nav button").forEach(function(btn){
+  btn.addEventListener("click",function(){
+    document.querySelectorAll(".nav button").forEach(function(x){x.classList.remove("active")});
+    btn.classList.add("active");
+    document.querySelectorAll(".view").forEach(function(x){x.classList.remove("active")});
+    document.getElementById("view-"+btn.dataset.view).classList.add("active");
+  });
+});
 
-async function init(){
-  renderTypes(); refreshDraftCount(); bind();
-  try{const [s,c]=await Promise.all([api('/api/sources'),api('/api/config')]);state.sources=s.sources;state.config=c;renderSources();renderSourceSelect();renderConfig()}catch(e){toast('Backend در دسترس نیست؛ پروژه را با Worker اجرا کن.');}
+document.getElementById("topicsFile").addEventListener("change",async function(e){
+  const file=e.target.files&&e.target.files[0]; if(!file)return;
+  const text=await file.text();
+  let topics=[];
+  if(file.name.toLowerCase().endsWith(".json")){
+    try{const j=JSON.parse(text);topics=Array.isArray(j)?j.map(String):[];}catch(_){}
+  } else {
+    topics=text.split(/[\n,;]+/).map(function(x){return x.trim()}).filter(Boolean);
+  }
+  if(topics.length) document.getElementById("topicsInput").value=topics.join("\n");
+});
+
+document.getElementById("startBatchBtn").addEventListener("click",startBatch);
+document.getElementById("cancelBatchBtn").addEventListener("click",function(){state.cancelled=true;setStatus("درخواست توقف ثبت شد؛ بعد از کار جاری متوقف می‌شود.")});
+document.getElementById("resetBatchBtn").addEventListener("click",resetBatch);
+document.getElementById("downloadManifestBtn").addEventListener("click",downloadResultsJson);
+document.getElementById("downloadFullPackBtn").addEventListener("click",function(){buildPack(null)});
+document.querySelectorAll("[data-pack-type]").forEach(function(btn){btn.addEventListener("click",function(){buildPack(btn.dataset.packType)})});
+document.getElementById("manualSearchBtn").addEventListener("click",manualSearch);
+document.getElementById("manualType").addEventListener("change",populateManualSources);
+
+function topicsFromInput(){
+  const raw=document.getElementById("topicsInput").value;
+  const arr=raw.split(/[\n,;]+/).map(function(x){return x.trim()}).filter(Boolean);
+  const seen=new Set(); return arr.filter(function(x){const k=x.toLowerCase();if(seen.has(k))return false;seen.add(k);return true});
 }
-function bind(){
-  $('#searchBtn').onclick=search;$('#clearBtn').onclick=()=>{$('#query').value='';state.items=[];renderResults()};
-  $('#query').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
-  $('#openDrafts').onclick=openDrafts;$('#closeDrawer').onclick=()=>$('#drawer').classList.remove('show');$('#drawer').onclick=e=>{if(e.target===$('#drawer'))$('#drawer').classList.remove('show')};
-  $('#exportBtn').onclick=exportDrafts;
-  $$('.menu button[data-view]').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
+function countsConfig(){
+  const o={};TYPES.forEach(function(t){o[t]=Math.max(0,Math.min(25,Number(document.getElementById("count-"+t).value)||0))});return o;
 }
-function switchView(v){state.view=v;$$('.menu button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));$('#discoverView').classList.toggle('hidden',v!=='discover');$('#sourcesView').classList.toggle('hidden',v!=='sources');$('#setupView').classList.toggle('hidden',v!=='setup'&&v!=='drafts');if(v==='drafts'){openDrafts();switchView('discover')} const titles={discover:['موتور محتوای Vibe','از منابع آزاد جستجو کن، نتیجه را به فرم نهایی Vibe تبدیل کن و Draft بگیر.'],sources:['منابع متصل','وضعیت Connectorهای پنج دسته را یکجا ببین.'],setup:['تنظیم اتصال‌ها','کلیدهای اختیاری Cloudflare Worker را مدیریت کن.']};if(titles[v]){$('#viewTitle').textContent=titles[v][0];$('#viewSubtitle').textContent=titles[v][1]}}
-function renderTypes(){const box=$('#types');box.innerHTML=Object.entries(typeDefs).map(([k,v])=>`<button class="type ${state.type===k?'active':''}" data-type="${k}"><span class="type-ico">${v.icon}</span><span><b>${v.label}</b><span>${v.sub}</span></span></button>`).join('');box.querySelectorAll('.type').forEach(b=>b.onclick=()=>{state.type=b.dataset.type;state.items=[];state.selected=null;state.prepared=null;renderTypes();renderSourceSelect();renderResults();renderInspector();})}
-function renderSourceSelect(){const s=$('#sourceSelect');const list=state.sources.filter(x=>x.types.includes(state.type));s.innerHTML=`<option value="all">همه منابع فعال</option>`+list.map(x=>`<option value="${x.id}" ${!x.live?'disabled':''}>${esc(x.name)}${x.live?'':' — نیاز به کلید'}</option>`).join('')}
-function renderSources(){const g=$('#sourceGrid');g.innerHTML=state.sources.map(s=>`<div class="source-card"><div class="row"><h4>${esc(s.name)}</h4><span class="status ${s.live?'':'off'}">${s.live?'متصل':'نیاز به تنظیم'}</span></div><p>${esc(s.topics.join(' • '))}</p><div class="meta"><span class="chip">${esc(s.mode)}</span><span class="chip ${s.auth==='none'?'good':'warn'}">${s.auth==='none'?'بدون ثبت‌نام':esc(s.auth)}</span></div><p style="min-height:0;margin-bottom:5px">${esc(s.rights)}</p>${s.provides?.length?`<p style="min-height:0;margin:0 0 7px;color:#596176"><b>فیلدهای منبع:</b> ${esc(s.provides.join(' • '))}</p>`:''}<a href="${s.homepage}" target="_blank" style="font-size:10px;color:var(--blue)">باز کردن منبع ↗</a></div>`).join('')}
-function renderConfig(){const c=state.config;const rows=[['AI/LLM',false,'خاموش — این نسخه بدون AI است'],['Smithsonian',c.smithsonian,'SI_API_KEY'],['Pixabay',c.pixabay,'PIXABAY_API_KEY'],['ترجمه',true,'On-demand + Cache (Connector جداگانه در مرحله بعد)']];$('#configGrid').innerHTML=rows.map(([n,on,key])=>`<div class="config"><b>${n}</b><span>${on?'✅ فعال/آماده':'⚪ غیرفعال'}<br><code>${esc(key)}</code></span></div>`).join('')}
-async function search(){const q=$('#query').value.trim();const source=$('#sourceSelect').value;const limit=$('#limitSelect').value;const safe=$('#safeOnly').checked?'1':'0';if(!q&&source!=='librivox'){toast('عبارت جستجو را بنویس.');return}$('#results').innerHTML='<div class="empty"><b>در حال دریافت…</b>از API منابع واقعی جستجو می‌کنم.</div>';$('#searchBtn').disabled=true;try{const d=await api(`/api/search?type=${state.type}&source=${encodeURIComponent(source)}&q=${encodeURIComponent(q)}&limit=${limit}&safe=${safe}`);state.items=d.items;renderProviders(d.providers||[]);renderResults()}catch(e){$('#results').innerHTML=`<div class="empty"><b>خطا</b>${esc(e.message)}</div>`}finally{$('#searchBtn').disabled=false}}
-function renderProviders(p){$('#providers').innerHTML=p.map(x=>`<span class="provider-state ${x.ok?'ok':'bad'}" title="${esc(x.error||'')}">${x.source}: ${x.ok?x.count+' نتیجه':('خطا'+(x.error?' — '+esc(String(x.error).slice(0,90)) : ''))}</span>`).join('')}
-function cardMedia(i){if(i.type==='text')return `<div class="thumb"><span class="glyph">Aa</span><span class="media-pill">${esc(i.source)}</span></div>`;if(i.thumbnail_url)return `<div class="thumb"><img loading="lazy" src="${esc(i.thumbnail_url)}" alt=""><span class="media-pill">${i.type==='video'?'▶ ':i.type==='podcast'?'◉ ':i.type==='music'?'♫ ':''}${esc(i.source)}</span></div>`;return `<div class="thumb"><span class="glyph">${typeDefs[i.type]?.icon||'◫'}</span><span class="media-pill">${esc(i.source)}</span></div>`}
-function renderResults(){const r=$('#results');$('#resultCount').textContent=`${state.items.length} نتیجه`;if(!state.items.length){r.innerHTML='<div class="empty"><b>نتیجه‌ای نیست</b>یک جستجوی جدید انجام بده.</div>';return}r.innerHTML=state.items.map((i,idx)=>`<article class="result">${cardMedia(i)}<div class="result-body"><h4>${esc(i.title)}</h4><div class="desc">${esc(i.description||'بدون توضیح')}</div><div class="meta"><span class="chip">${esc(i.source)}</span>${i.duration?`<span class="chip">${fmtDuration(i.duration)}</span>`:''}<span class="chip ${i.review_required?'warn':'good'}">${i.review_required?'بررسی مجوز':'آماده'}</span></div><div class="result-actions"><button class="mini-btn primary" data-pick="${idx}">انتخاب</button>${i.source_url?`<a class="mini-btn" target="_blank" href="${esc(i.source_url)}" style="text-decoration:none">منبع ↗</a>`:''}</div></div></article>`).join('');r.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{state.selected=state.items[Number(b.dataset.pick)];state.prepared=null;renderInspector();})}
-function renderInspector(){const box=$('#inspectorBody');const i=state.selected;if(!i){box.className='placeholder';box.textContent='هنوز محتوایی انتخاب نشده.';return}box.className='';const schema=typeDefs[i.type].schema;const media=i.thumbnail_url?`<img src="${esc(i.thumbnail_url)}" alt="">`:`<div style="font-size:34px">${typeDefs[i.type].icon}</div>`;const p=state.prepared;const fieldState=k=>{if(!p)return '—';const key=k.replace('[]','');let v=p[key];if(k==='keywords[]')v=p.keywords;return (Array.isArray(v)?v.length>0:v!==null&&v!==undefined&&v!=='')?'✓':'—'};const readiness=p?`<div style="margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:11px;background:${p.ready_to_publish?'var(--green-soft)':'var(--amber-soft)'}"><div style="display:flex;justify-content:space-between;gap:8px"><b style="font-size:11px">کامل بودن ${p.completeness||0}%</b><span style="font-size:10px">${p.ready_to_publish?'Ready to Publish':'Draft / Review'}</span></div>${p.missing_required?.length?`<div style="font-size:9px;margin-top:6px;color:#7c5b24">ناقص: ${esc(p.missing_required.join(' • '))}</div>`:''}<div style="font-size:9px;margin-top:5px;color:#677084">ترجمه: ${esc(p.translation_mode||'—')} • حقوق: ${esc(p.rights_status||'—')}</div></div>`:'';box.innerHTML=`<div class="preview"><div class="preview-media">${media}</div><div class="preview-content"><b>${esc(i.title)}</b><p>${esc((i.description||'').slice(0,260))}</p></div></div><div class="schema-list">${schema.map(k=>`<div class="schema-row"><code>${k}</code><span>${fieldState(k)}</span></div>`).join('')}</div>${readiness}<div class="inspect-actions"><button id="resolveBtn">Resolve فایل/متن</button><button class="primary" id="prepareBtn">تکمیل بدون AI</button><button class="dark" id="draftBtn" ${p?'':'disabled'}>افزودن به Draft</button><button id="copyBtn" ${p?'':'disabled'}>کپی JSON</button></div>${p?`<div style="margin-top:10px;border:1px solid var(--line);border-radius:14px;padding:10px;background:#fbfbfd"><b style="font-size:11px">${esc(p.category_label||'')}</b><div style="font-size:10px;color:var(--muted);margin-top:5px">${esc(p.title||'')}</div></div>`:''}`;
-  $('#resolveBtn').onclick=resolveSelected;$('#prepareBtn').onclick=prepareSelected;$('#draftBtn').onclick=addDraft;$('#copyBtn').onclick=()=>navigator.clipboard.writeText(JSON.stringify(state.prepared,null,2)).then(()=>toast('JSON کپی شد.'));
+function langNorm(x){return String(x||"").toLowerCase().split("-")[0]}
+function setStatus(msg){document.getElementById("batchStatus").textContent=msg}
+function packStatus(msg){document.getElementById("packStatus").textContent=msg}
+function updateStats(){
+  document.getElementById("statTopics").textContent=state.topics.length;
+  document.getElementById("statAccepted").textContent=state.accepted.length;
+  document.getElementById("statRejected").textContent=state.rejected.length;
+  document.getElementById("statReview").textContent=state.review.length;
+  document.getElementById("statDuplicates").textContent=state.duplicates;
+  document.getElementById("statErrors").textContent=state.errors;
+  const has=state.accepted.length>0;
+  document.getElementById("downloadManifestBtn").disabled=!has;
+  document.getElementById("downloadFullPackBtn").disabled=!has;
+  document.querySelectorAll("[data-pack-type]").forEach(function(b){b.disabled=!state.accepted.some(function(x){return x.type===b.dataset.packType})});
 }
-async function resolveSelected(){if(!state.selected)return;const b=$('#resolveBtn');b.disabled=true;b.textContent='در حال Resolve…';try{const d=await api('/api/resolve',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(state.selected)});state.selected=d.item;const idx=state.items.findIndex(x=>x.id===state.selected.id);if(idx>=0)state.items[idx]=state.selected;renderInspector();toast(state.selected.media_url?'فایل رسانه پیدا شد.':'Metadata به‌روزرسانی شد.')}catch(e){toast(e.message)}finally{renderInspector()}}
-async function prepareSelected(){if(!state.selected)return;const b=$('#prepareBtn');b.disabled=true;b.textContent='در حال آماده‌سازی…';try{if((['video','podcast','music'].includes(state.selected.type)&&!state.selected.media_url)||(state.selected.type==='text'&&!state.selected.raw?.resolved_text)){const d=await api('/api/resolve',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(state.selected)});state.selected=d.item}const d=await api('/api/prepare',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({item:state.selected,learning_language:$('#learnLang').value,ui_language:$('#uiLang').value})});state.prepared=d.prepared;renderInspector();toast(d.warning||'بدون AI آماده شد.')}catch(e){toast(e.message);renderInspector()}}
-function addDraft(){if(!state.prepared)return;const list=drafts();list.unshift(state.prepared);saveDrafts(list);toast('به Draftها اضافه شد.');}
-function openDrafts(){const list=drafts();$('#draftList').innerHTML=list.length?list.map((d,i)=>`<div class="draft"><h4>${esc(d.title||'Untitled')}</h4><p>${typeDefs[d.type]?.label||d.type} • ${esc(d.category_label||'')} • ${esc(d.source?.id||'')} • ${d.completeness||0}%</p><div class="row"><button data-copy="${i}">کپی JSON</button><button class="danger" data-del="${i}">حذف</button></div></div>`).join(''):'<div class="placeholder">هنوز Draftی نداری.</div>';$('#drawer').classList.add('show');$('#draftList').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const a=drafts();a.splice(Number(b.dataset.del),1);saveDrafts(a);openDrafts()});$('#draftList').querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(JSON.stringify(drafts()[Number(b.dataset.copy)],null,2)).then(()=>toast('کپی شد.')))}
-function exportDrafts(){const data=JSON.stringify({schema:'vibe-content-export-1',exported_at:new Date().toISOString(),items:drafts()},null,2);const blob=new Blob([data],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='vibe-drafts.json';a.click();URL.revokeObjectURL(a.href)}
-init();
+function initTopicStats(topics,counts){
+  state.topicStats={};
+  topics.forEach(function(topic){
+    const types={};TYPES.forEach(function(t){types[t]={want:counts[t],got:0,status:counts[t]?"pending":"off"}});
+    state.topicStats[topic]={types:types,status:"pending"};
+  });
+  renderTopicRows();
+}
+function renderTopicRows(){
+  const body=document.getElementById("topicRows");
+  if(!state.topics.length){body.innerHTML='<tr><td colspan="7" class="empty">نتیجه‌ای نیست.</td></tr>';return}
+  body.innerHTML=state.topics.map(function(topic){
+    const s=state.topicStats[topic]; const cells=TYPES.map(function(t){
+      const x=s.types[t]; if(!x.want)return '<td>—</td>';
+      const cls=x.got>=x.want?"ok":(x.status==="done"?"warn":"");
+      return '<td class="'+cls+'">'+x.got+" / "+x.want+"</td>";
+    }).join("");
+    const sc=s.status==="done"?"ok":s.status==="running"?"warn":"";
+    const st=s.status==="done"?"تمام":s.status==="running"?"در حال پردازش":"در صف";
+    return "<tr><td><b>"+esc(topic)+"</b></td>"+cells+'<td class="'+sc+'">'+st+"</td></tr>";
+  }).join("");
+}
+function esc(s){return String(s||"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function resetBatch(){
+  if(state.running)return;
+  state.topics=[];state.accepted=[];state.rejected=[];state.review=[];state.duplicates=0;state.errors=0;state.seen=new Set();state.topicStats={};
+  document.getElementById("batchProgress").style.width="0%";document.getElementById("jobState").textContent="Idle";setStatus("نتایج پاک شد.");packStatus("هنوز Pack ساخته نشده.");updateStats();renderTopicRows();
+}
+
+async function apiJson(url,options){
+  const r=await fetch(url,options);let data={};try{data=await r.json()}catch(_){}
+  if(!r.ok)throw new Error(data.error||("HTTP "+r.status));return data;
+}
+
+async function startBatch(){
+  if(state.running)return;
+  const topics=topicsFromInput();const counts=countsConfig();
+  const enabled=TYPES.filter(function(t){return counts[t]>0});
+  if(!topics.length){alert("حداقل یک موضوع وارد کن.");return}
+  if(!enabled.length){alert("برای حداقل یک نوع محتوا تعداد بزرگ‌تر از صفر بگذار.");return}
+  resetBatch();
+  state.running=true;state.cancelled=false;state.topics=topics;initTopicStats(topics,counts);updateStats();
+  document.getElementById("startBatchBtn").disabled=true;document.getElementById("cancelBatchBtn").disabled=false;document.getElementById("jobState").textContent="Running";
+  const tasks=[];topics.forEach(function(topic){enabled.forEach(function(type){tasks.push({topic:topic,type:type,want:counts[type]})})});
+  let done=0;
+  setStatus("Batch شروع شد: "+tasks.length+" کار جستجو/آماده‌سازی.");
+  for(let i=0;i<tasks.length;i++){
+    if(state.cancelled)break;
+    const task=tasks[i];state.topicStats[task.topic].status="running";renderTopicRows();
+    try{await processTask(task)}catch(err){state.errors++;state.topicStats[task.topic].types[task.type].status="error";}
+    done++;document.getElementById("batchProgress").style.width=Math.round(done/tasks.length*100)+"%";updateStats();renderTopicRows();
+    await new Promise(function(r){setTimeout(r,120)});
+  }
+  Object.keys(state.topicStats).forEach(function(k){if(state.topicStats[k].status!=="done")state.topicStats[k].status="done"});
+  state.running=false;document.getElementById("startBatchBtn").disabled=false;document.getElementById("cancelBatchBtn").disabled=true;document.getElementById("jobState").textContent=state.cancelled?"Stopped":"Done";
+  setStatus(state.cancelled?"Batch متوقف شد. نتایج فعلی قابل دانلودند.":"Batch تمام شد. "+state.accepted.length+" Vibe کامل آماده Pack است.");
+  renderTopicRows();updateStats();
+}
+
+async function processTask(task){
+  const safe=document.getElementById("safeSearch").checked?"1":"0";
+  const includeReview=document.getElementById("includeReview").checked;
+  const strictLanguage=document.getElementById("strictLanguage").checked;
+  const learning=document.getElementById("learningLanguage").value;
+  const ui=document.getElementById("uiLanguage").value;
+  const searchLimit=Math.min(100,Math.max(task.want*4,12));
+  const url="/api/search?type="+encodeURIComponent(task.type)+"&source=all&q="+encodeURIComponent(task.topic)+"&limit="+searchLimit+"&safe="+safe;
+  const data=await apiJson(url);
+  if((data.providers||[]).some(function(p){return !p.ok}))state.errors+=(data.providers||[]).filter(function(p){return !p.ok}).length;
+  let got=0;
+  for(const item of (data.items||[])){
+    if(state.cancelled||got>=task.want)break;
+    const dedupe=String(item.source||"")+":"+String(item.id||"");
+    if(state.seen.has(dedupe)){state.duplicates++;continue}
+    state.seen.add(dedupe);
+    try{
+      const rr=await apiJson("/api/resolve",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({item:item})});
+      const resolved=rr.item||item;
+      if(strictLanguage&&resolved.language&&langNorm(resolved.language)!==langNorm(learning)){state.rejected.push({topic:task.topic,reason:"language",item:resolved});continue}
+      const pr=await apiJson("/api/prepare",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({item:resolved,learning_language:learning,ui_language:ui})});
+      const prepared=pr.prepared;
+      if(!prepared||prepared.completeness<100||prepared.source&&prepared.source.commercial_ok===false){
+        state.rejected.push({topic:task.topic,reason:"incomplete_or_rights",item:prepared||resolved});continue
+      }
+      if(prepared.source&&prepared.source.review_required&&!includeReview){
+        state.rejected.push({topic:task.topic,reason:"rights_review",item:prepared});continue
+      }
+      const record=Object.assign({},prepared,{topic:task.topic,source_item_id:resolved.id});
+      state.accepted.push(record);
+      if(record.source&&record.source.review_required)state.review.push(record);
+      got++;
+    }catch(err){state.errors++;state.rejected.push({topic:task.topic,reason:"error",error:String(err&&err.message||err),item:item})}
+  }
+  const ts=state.topicStats[task.topic].types[task.type];ts.got=got;ts.status="done";
+  const allDone=TYPES.every(function(t){const x=state.topicStats[task.topic].types[t];return x.status==="done"||x.status==="off"||x.status==="error"});
+  if(allDone)state.topicStats[task.topic].status="done";
+}
+
+function cleanRecord(x){
+  const o=JSON.parse(JSON.stringify(x));
+  delete o.runtime_fields;
+  return o;
+}
+function resultsPayload(){
+  return {
+    engine_version:"0.5.0",
+    created_at:new Date().toISOString(),
+    config:{learning_language:document.getElementById("learningLanguage").value,ui_language:document.getElementById("uiLanguage").value,counts:countsConfig(),topics:state.topics},
+    counts:{accepted:state.accepted.length,rejected:state.rejected.length,review:state.review.length,duplicates:state.duplicates,errors:state.errors},
+    items:state.accepted.map(cleanRecord)
+  };
+}
+function downloadResultsJson(){
+  const blob=new Blob([JSON.stringify(resultsPayload(),null,2)],{type:"application/json"});
+  saveBlob(blob,"vibe-results-"+dateStamp()+".json");
+}
+function dateStamp(){return new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}
+function saveBlob(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}
+
+async function buildPack(filterType){
+  const items=state.accepted.filter(function(x){return !filterType||x.type===filterType});
+  if(!items.length)return;
+  if(items.length>150&&!confirm("این Pack شامل "+items.length+" آیتم است و ممکن است حجم زیادی داشته باشد. ادامه می‌دهی؟"))return;
+  const label=filterType?TYPE_LABEL[filterType]:"کامل";
+  packStatus("در حال ساخت Pack "+label+" — 0 / "+items.length);
+  const entries=[];
+  const report={engine_version:"0.5.0",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[]};
+  const licenses={};
+  const manifest=resultsPayload();manifest.items=items.map(cleanRecord);
+  entries.push({path:"manifest.json",data:jsonBytes(manifest)});
+  entries.push({path:"report.json",data:jsonBytes(report)});
+  items.forEach(function(x){const k=(x.source&&x.source.license||"Unknown")+" | "+(x.source&&x.source.license_url||"");licenses[k]=(licenses[k]||0)+1});
+  entries.push({path:"licenses.json",data:jsonBytes(licenses)});
+
+  let i=0;
+  for(const item of items){
+    i++;packStatus("در حال ساخت Pack "+label+" — "+i+" / "+items.length+" • "+item.title);
+    const id=safeName(String(item.content_id||item.provider_raw_id||("item-"+i)));
+    const base=item.type+"/"+id+"/";
+    const itemJson=cleanRecord(item);
+    entries.push({path:"json/"+item.type+"/"+id+".json",data:jsonBytes(itemJson)});
+    entries.push({path:base+"item.json",data:jsonBytes(itemJson)});
+
+    if(item.type==="text"){
+      entries.push({path:base+"text.txt",data:textBytes(item.body||"")});
+    }
+    if(item.type==="podcast"&&item.transcript){
+      entries.push({path:base+"transcript.txt",data:textBytes(item.transcript)});
+    }
+    if(item.subtitle_url){
+      await tryAddRemote(entries,base+"subtitle"+guessExt(item.subtitle_url,"text/vtt",".vtt"),item.subtitle_url,report);
+    }
+    if(item.media_url){
+      const name=item.type==="image"?"image":item.type==="video"?"video":item.type==="podcast"?"audio":item.type==="music"?"audio":"media";
+      await tryAddRemote(entries,base+name,item.media_url,report,true);
+    }
+    if(item.poster_url&&(item.type==="video"||item.type==="music")){
+      await tryAddRemote(entries,base+(item.type==="music"?"cover":"poster"),item.poster_url,report,true);
+    }
+  }
+  entries[1]={path:"report.json",data:jsonBytes(report)};
+  packStatus("در حال نوشتن ZIP...");
+  const blob=makeZip(entries);
+  saveBlob(blob,"Vibe-Pack-"+(filterType||"ALL")+"-"+dateStamp()+".zip");
+  packStatus("Pack "+label+" آماده شد. "+items.length+" آیتم؛ خطای دانلود مدیا: "+report.media_download_errors.length);
+}
+
+async function tryAddRemote(entries,baseName,url,report,autoExt){
+  try{
+    const r=await fetch("/api/proxy?url="+encodeURIComponent(url));
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    const type=r.headers.get("content-type")||"";
+    const bytes=new Uint8Array(await r.arrayBuffer());
+    const ext=autoExt?guessExt(url,type,""):"";
+    entries.push({path:baseName+ext,data:bytes});
+  }catch(err){report.media_download_errors.push({url:url,error:String(err&&err.message||err)})}
+}
+function guessExt(url,type,fallback){
+  const t=String(type||"").toLowerCase();
+  const map=[["image/jpeg",".jpg"],["image/png",".png"],["image/webp",".webp"],["video/mp4",".mp4"],["audio/mpeg",".mp3"],["audio/mp4",".m4a"],["audio/ogg",".ogg"],["audio/flac",".flac"],["text/vtt",".vtt"],["application/zip",".zip"]];
+  for(const m of map)if(t.indexOf(m[0])>=0)return m[1];
+  try{const p=new URL(url).pathname;const m=p.match(/\.(jpg|jpeg|png|webp|mp4|m4a|mp3|ogg|flac|wav|vtt|srt)$/i);if(m)return "."+m[1].toLowerCase().replace("jpeg","jpg")}catch(_){}
+  return fallback||".bin";
+}
+function safeName(s){return String(s||"item").replace(/[^a-zA-Z0-9._-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,90)||"item"}
+function jsonBytes(o){return textBytes(JSON.stringify(o,null,2))}
+function textBytes(s){return new TextEncoder().encode(String(s||""))}
+
+let crcTable=null;
+function getCrcTable(){
+  if(crcTable)return crcTable;crcTable=[];
+  for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);crcTable[n]=c>>>0}
+  return crcTable;
+}
+function crc32(bytes){let c=0xffffffff,t=getCrcTable();for(let i=0;i<bytes.length;i++)c=t[(c^bytes[i])&255]^(c>>>8);return (c^0xffffffff)>>>0}
+function u16(n){return new Uint8Array([n&255,(n>>>8)&255])}
+function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255])}
+function concatParts(parts){return parts}
+function dosTimeDate(d){
+  d=d||new Date();let time=((d.getHours()&31)<<11)|((d.getMinutes()&63)<<5)|((Math.floor(d.getSeconds()/2))&31);
+  let date=(((d.getFullYear()-1980)&127)<<9)|(((d.getMonth()+1)&15)<<5)|(d.getDate()&31);return {time:time,date:date};
+}
+function makeZip(entries){
+  const parts=[],central=[];let offset=0;const dt=dosTimeDate(new Date());
+  entries.forEach(function(e){
+    const name=textBytes(e.path);const data=e.data instanceof Uint8Array?e.data:new Uint8Array(e.data);const crc=crc32(data);const size=data.length;
+    const local=[u32(0x04034b50),u16(20),u16(0),u16(0),u16(dt.time),u16(dt.date),u32(crc),u32(size),u32(size),u16(name.length),u16(0),name];
+    local.forEach(function(p){parts.push(p)});parts.push(data);
+    const cen=[u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(dt.time),u16(dt.date),u32(crc),u32(size),u32(size),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),name];
+    central.push(cen);offset+=30+name.length+size;
+  });
+  const centralOffset=offset;let centralSize=0;
+  central.forEach(function(group){group.forEach(function(p){parts.push(p);centralSize+=p.length})});
+  const count=entries.length;
+  [u32(0x06054b50),u16(0),u16(0),u16(count),u16(count),u32(centralSize),u32(centralOffset),u16(0)].forEach(function(p){parts.push(p)});
+  return new Blob(concatParts(parts),{type:"application/zip"});
+}
+
+async function loadSources(){
+  try{
+    const d=await apiJson("/api/sources");state.sources=d.sources||[];renderSources();populateManualSources();
+  }catch(err){document.getElementById("sourcesGrid").innerHTML='<div class="empty">خطا در دریافت منابع</div>'}
+}
+function renderSources(){
+  const g=document.getElementById("sourcesGrid");
+  g.innerHTML=state.sources.map(function(s){
+    const ts=(s.types||[]).map(function(t){return '<span class="tag">'+esc(TYPE_LABEL[t]||t)+'</span>'}).join("");
+    return '<div class="source"><h4>'+esc(s.name)+' '+(s.live?'<span class="tag live">متصل</span>':'<span class="tag off">نیاز به Key</span>')+'</h4><p>'+esc(s.note||"")+'</p><div>'+ts+'</div><p><b>روش:</b> '+esc(s.mode||"")+'<br><b>مجوز:</b> '+esc(s.rights||"")+'</p></div>';
+  }).join("");
+}
+function populateManualSources(){
+  const t=document.getElementById("manualType").value;const sel=document.getElementById("manualSource");
+  const old=sel.value;sel.innerHTML='<option value="all">همه منابع سازگار</option>'+state.sources.filter(function(s){return s.live&&(s.types||[]).includes(t)}).map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>'}).join("");
+  if(Array.from(sel.options).some(function(o){return o.value===old}))sel.value=old;
+}
+async function manualSearch(){
+  const q=document.getElementById("manualQ").value.trim();if(!q)return;
+  const type=document.getElementById("manualType").value,source=document.getElementById("manualSource").value;
+  const box=document.getElementById("manualResults");box.innerHTML='<div class="empty">در حال جستجو...</div>';
+  try{
+    const d=await apiJson("/api/search?type="+encodeURIComponent(type)+"&source="+encodeURIComponent(source)+"&q="+encodeURIComponent(q)+"&limit=24&safe=1");
+    if(!(d.items||[]).length){box.innerHTML='<div class="empty">نتیجه‌ای پیدا نشد.</div>';return}
+    box.innerHTML=d.items.slice(0,24).map(function(x){return '<div class="result"><h4>'+esc(x.title||"بدون عنوان")+'</h4><p>'+esc((x.description||"").slice(0,180))+'</p><small>'+esc(x.source)+' • '+esc(x.license||"")+'</small></div>'}).join("");
+  }catch(err){box.innerHTML='<div class="empty">خطا: '+esc(err.message)+'</div>'}
+}
+
+loadSources();updateStats();
 </script>
 </body>
 </html>
