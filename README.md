@@ -239,3 +239,18 @@ Pack کامل برای Batchهای خیلی بزرگ ممکن است سنگین 
 - Pack حالا ابتدا ساخته می شود و سپس یک لینک واقعی «دانلود فایل ZIP آماده» داخل پنل خروجی نمایش داده می شود.
 - کاربر روی همان لینک کلیک می کند؛ بنابراین دانلود در Safari و مرورگرهای سخت گیرتر قابل اتکاتر است.
 - Object URL قبلی هنگام Reset آزاد می شود.
+
+
+## v0.6.0 — Topic Universe v1
+
+- فایل `public/topic-universe-v1.json` با 1800 Seed اضافه شد.
+- 800 موضوع Interest: دقیقاً 100 موضوع برای هر یک از 8 Interest رسمی Planning.
+- 500 موضوع Discovery مستقل از علایق کاربر.
+- 250 Seed مستقل برای Podcast.
+- 250 Seed مستقل برای Music بر اساس genre + mood + activity.
+- Interest فقط سیگنال شخصی سازی است و کل Library را محدود نمی کند.
+- UI می تواند Topic Universe را مستقیم بارگذاری یا دانلود کند.
+- JSON غنی علاوه بر query شامل pool، interest، main_goals، levels، search_queries، content_type_fit، tags و character_affinity است.
+- Batch با گزینه «تناسب نوع محتوا» از اتصال های بی معنی مثل Food→Music جلوگیری می کند.
+- در Topic Universe، موتور تا 4 search query برای هر Seed امتحان می کند تا شانس رسیدن به quota بیشتر شود.
+- Character affinity فعلاً خالی است و بعد از دریافت Profile کاراکترها پر می شود؛ fixed bindings بعداً باید حفظ شوند و generic content در Publish Queue match شود.
