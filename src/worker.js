@@ -7,7 +7,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
-      if (url.pathname === '/api/health') return json({ ok: true, version: '0.4.0', now: new Date().toISOString() });
+      if (url.pathname === '/api/health') return json({ ok: true, version: '0.4.1', now: new Date().toISOString() });
       if (url.pathname === '/api/sources') return json({ sources: sourceRegistry(env) });
       if (url.pathname === '/api/search') return handleSearch(url, env, ctx);
       if (url.pathname === '/api/resolve' && request.method === 'POST') return handleResolve(request, env, ctx);
@@ -142,7 +142,7 @@ async function cachedFetch(url, options = {}, ttl = 1800, ctx) {
 
 async function searchGutenberg(q, limit) {
   const u = `https://www.gutenberg.org/ebooks/search.opds/?query=${encodeURIComponent(q)}`;
-  const r = await fetch(u, { headers: { 'User-Agent': 'VibeContentEngine/0.4 (+https://speakme.ir)' } });
+  const r = await fetch(u, { headers: { 'User-Agent': 'VibeContentEngine/0.4.1 (+https://speakme.ir)' } });
   if (!r.ok) throw new Error(`Gutenberg ${r.status}`);
   const xml = await r.text();
   return parseGutenbergOpds(xml).slice(0, limit);
@@ -273,27 +273,64 @@ async function searchNasa(type, q, limit, ctx) {
 }
 
 async function searchLibriVox(q, limit, offset, ctx) {
-  const api = new URL('https://librivox.org/api/feed/audiobooks/');
-  const params = { format: 'json', extended: '1', coverart: '1', limit: String(limit), offset: String(offset) };
+  // Keep search payload light. LibriVox recommends batched requests and the
+  // extended payload can become very large. Full metadata/tracks are fetched
+  // only after the user selects an item and presses Resolve.
+  const safeLimit = Math.min(Number(limit) || 24, 25);
+  const fields = '{id,title,description,authors,url_librivox,url_project,url_rss,url_zip_file,url_text_source,language,num_sections,totaltime,totaltimesecs,coverart_jpg,coverart_thumbnail,genres}';
+
+  const attempts = [];
+  const queryApi = new URL('https://librivox.org/api/feed/audiobooks');
+  const params = {
+    format: 'json',
+    coverart: '1',
+    limit: String(safeLimit),
+    offset: String(offset || 0),
+    fields,
+  };
   if (q) params.title = q;
-  api.search = new URLSearchParams(params).toString();
-  const r = await cachedFetch(api.toString(), { headers: { 'User-Agent': 'VibeContentEngine/0.4 (+https://speakme.ir)' } }, 3600, ctx);
-  if (!r.ok) throw new Error(`LibriVox ${r.status}`);
-  const data = await r.json();
-  return (data.books || []).map(b => {
-    const authors = (b.authors || []).map(a => [a.first_name, a.last_name].filter(Boolean).join(' ')).join(', ');
-    const genres = (b.genres || []).map(g => g.name || g).filter(Boolean);
-    return normalizeItem({
-      id: `librivox:${b.id}`, source: 'librivox', type: 'podcast', title: b.title,
-      description: stripHtml(b.description || '').slice(0, 1600), creator: authors,
-      source_url: b.url_librivox || b.url_project || '', media_url: b.url_rss || b.url_zip_file || '',
-      thumbnail_url: b.coverart_jpg || b.coverart_thumbnail || '', language: b.language || '',
-      duration: Number(b.totaltimesecs || 0) || null,
-      license: 'LibriVox recordings: Public Domain in the U.S.', license_url: 'https://librivox.org/pages/public-domain/',
-      commercial_ok: true, review_required: true,
-      raw: { rss: b.url_rss || '', zip: b.url_zip_file || '', text_source: b.url_text_source || '', genres, sections: b.num_sections || '' }
-    });
-  });
+  queryApi.search = new URLSearchParams(params).toString();
+  attempts.push(queryApi.toString());
+
+  // Fallback to the documented path-style title search if the query-string
+  // form is rejected by the upstream server.
+  if (q) {
+    const pathApi = new URL(`https://librivox.org/api/feed/audiobooks/title/${encodeURIComponent(q)}`);
+    pathApi.search = new URLSearchParams({
+      format: 'json', coverart: '1', limit: String(safeLimit), offset: String(offset || 0), fields,
+    }).toString();
+    attempts.push(pathApi.toString());
+  }
+
+  let lastError = 'LibriVox request failed';
+  for (const endpoint of attempts) {
+    try {
+      const r = await cachedFetch(endpoint, { headers: { 'Accept': 'application/json' } }, 1800, ctx);
+      if (!r.ok) {
+        const detail = (await r.text()).slice(0, 180).replace(/\s+/g, ' ');
+        lastError = `LibriVox ${r.status}${detail ? ` — ${detail}` : ''}`;
+        continue;
+      }
+      const data = await r.json();
+      return (data.books || []).map(b => {
+        const authors = (b.authors || []).map(a => [a.first_name, a.last_name].filter(Boolean).join(' ')).join(', ');
+        const genres = (b.genres || []).map(g => g.name || g).filter(Boolean);
+        return normalizeItem({
+          id: `librivox:${b.id}`, source: 'librivox', type: 'podcast', title: b.title,
+          description: stripHtml(b.description || '').slice(0, 1600), creator: authors,
+          source_url: b.url_librivox || b.url_project || '', media_url: b.url_rss || b.url_zip_file || '',
+          thumbnail_url: b.coverart_jpg || b.coverart_thumbnail || '', language: b.language || '',
+          duration: Number(b.totaltimesecs || 0) || null,
+          license: 'LibriVox recordings: Public Domain in the U.S.', license_url: 'https://librivox.org/pages/public-domain/',
+          commercial_ok: true, review_required: true,
+          raw: { rss: b.url_rss || '', zip: b.url_zip_file || '', text_source: b.url_text_source || '', genres, sections: b.num_sections || '' }
+        });
+      });
+    } catch (err) {
+      lastError = `LibriVox network/parse error — ${err?.message || err}`;
+    }
+  }
+  throw new Error(lastError);
 }
 
 async function searchInternetArchive(q, limit, ctx) {
@@ -372,7 +409,7 @@ async function handleResolve(request, env, ctx) {
   if (item.source === 'gutenberg') {
     let resolvedText = '';
     if (item.media_url) {
-      const r = await cachedFetch(item.media_url, { headers: { 'User-Agent': 'VibeContentEngine/0.4 (+https://speakme.ir)' } }, 3600, ctx);
+      const r = await cachedFetch(item.media_url, { headers: { 'User-Agent': 'VibeContentEngine/0.4.1 (+https://speakme.ir)' } }, 3600, ctx);
       if (r.ok) {
         const ct = r.headers.get('content-type') || '';
         const raw = await r.text();
@@ -416,15 +453,44 @@ async function handleResolve(request, env, ctx) {
   }
   if (item.source === 'librivox') {
     const id = String(item.id || '').replace(/^librivox:/, '');
-    const api = `https://librivox.org/api/feed/audiotracks/?project_id=${encodeURIComponent(id)}&format=json`;
-    const r = await cachedFetch(api, { headers: { 'User-Agent': 'VibeContentEngine/0.4 (+https://speakme.ir)' } }, 3600, ctx);
+    let enriched = { ...item };
+
+    // Full project metadata is fetched only for the selected audiobook.
+    try {
+      const bookApi = `https://librivox.org/api/feed/audiobooks/?id=${encodeURIComponent(id)}&format=json&extended=1&coverart=1`;
+      const br = await cachedFetch(bookApi, { headers: { 'Accept': 'application/json' } }, 3600, ctx);
+      if (br.ok) {
+        const bd = await br.json();
+        const b = (bd.books || [])[0];
+        if (b) {
+          enriched = {
+            ...enriched,
+            description: stripHtml(b.description || enriched.description || '').slice(0, 1600),
+            thumbnail_url: b.coverart_jpg || b.coverart_thumbnail || enriched.thumbnail_url || '',
+            duration: Number(b.totaltimesecs || enriched.duration || 0) || null,
+            language: b.language || enriched.language || '',
+            source_url: b.url_librivox || b.url_project || enriched.source_url || '',
+            raw: {
+              ...(enriched.raw || {}),
+              rss: b.url_rss || enriched.raw?.rss || '',
+              zip: b.url_zip_file || enriched.raw?.zip || '',
+              text_source: b.url_text_source || enriched.raw?.text_source || '',
+            },
+          };
+        }
+      }
+    } catch (_) {}
+
+    const trackApi = `https://librivox.org/api/feed/audiotracks/?project_id=${encodeURIComponent(id)}&format=json`;
+    const r = await cachedFetch(trackApi, { headers: { 'Accept': 'application/json' } }, 3600, ctx);
     if (r.ok) {
       const data = await r.json();
       const tracks = data.tracks || data.audiotracks || [];
       const first = tracks[0] || null;
       const media = first?.url || first?.url_audio || first?.mp3 || first?.file || '';
-      return json({ item: { ...item, media_url: media || item.media_url, raw: { ...(item.raw || {}), first_track: first, track_count: tracks.length } } });
+      return json({ item: { ...enriched, media_url: media || enriched.media_url, raw: { ...(enriched.raw || {}), first_track: first, track_count: tracks.length } } });
     }
+    return json({ item: enriched });
   }
   return json({ item });
 }

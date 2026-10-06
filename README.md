@@ -1,4 +1,4 @@
-# Vibe Content Engine v0.4 — بدون AI
+# Vibe Content Engine v0.4.1 — بدون AI
 
 این نسخه موتور محتوای Vibe را با معماری **Rules-only** اجرا می‌کند. هیچ Gemini، OpenAI یا LLM در مسیر Import/Prepare وجود ندارد.
 
@@ -156,3 +156,10 @@ npx wrangler secret put PIXABAY_API_KEY
 - Cron/Queue برای Sync شبانه
 
 این موارد مستقل از موتور Rules-only فعلی هستند و می‌توانند در مرحله بعد اضافه شوند.
+
+
+## تغییر v0.4.1
+- جستجوی LibriVox سبک‌تر شد: حداکثر 25 نتیجه در هر درخواست جستجو.
+- extended metadata فقط هنگام Resolve یک آیتم دریافت می‌شود.
+- fallback به path-style title search اضافه شد.
+- خطای واقعی provider در UI نمایش داده می‌شود تا دیباگ آسان‌تر باشد.
