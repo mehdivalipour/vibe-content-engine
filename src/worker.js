@@ -3,7 +3,7 @@ const JSON_HEADERS = {
   'cache-control': 'no-store',
 };
 
-const SOURCE_USER_AGENT = 'VibeContentEngine/0.6.2 (https://speakme.ir/)';
+const SOURCE_USER_AGENT = 'VibeContentEngine/0.7.0 (https://speakme.ir/)';
 
 function withSourceHeaders(url, options = {}) {
   const headers = new Headers(options.headers || {});
@@ -27,7 +27,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
-      if (url.pathname === '/api/health') return json({ ok: true, version: '0.6.2', now: new Date().toISOString() });
+      if (url.pathname === '/api/health') return json({ ok: true, version: '0.7.0', now: new Date().toISOString() });
       if (url.pathname === '/api/sources') return json({ sources: sourceRegistry(env) });
       if (url.pathname === '/api/proxy' && request.method === 'GET') return handleProxy(url, ctx);
       if (url.pathname === '/api/search') return handleSearch(url, env, ctx);
@@ -40,6 +40,9 @@ export default {
           mode: 'rules-only',
           smithsonian: Boolean(env.SI_API_KEY),
           pixabay: Boolean(env.PIXABAY_API_KEY),
+          review_gallery: true,
+          curated_mode: true,
+          pilot_target: 45,
           translation: 'on-demand-cache',
         });
       }
@@ -76,13 +79,13 @@ function sourceRegistry(env) {
       homepage: 'https://en.wikipedia.org/', provides: ['title','extract/body','source','license'], note: 'برای پوشش موضوعات عمومی استفاده می‌شود و به‌صورت Review نگه داشته می‌شود.'
     },
     {
-      id: 'wikimedia', name: 'Wikimedia Commons', types: ['image', 'video', 'podcast', 'music'], live: true, auth: 'none', mode: 'MediaWiki API',
+      id: 'wikimedia', name: 'Wikimedia Commons', types: ['image', 'video', 'podcast', 'music'], live: true, auth: 'none', mode: 'MediaWiki API', quality_tier: 'B', curated_capable: true,
       topics: ['عکس', 'ویدیو', 'صدا', 'موسیقی', 'تاریخ', 'فرهنگ', 'علم'],
       rights: 'مجوز هر فایل جداست؛ موتور فقط مجوز و Attribution را همراه آیتم نگه می‌دارد.',
       homepage: 'https://commons.wikimedia.org/', provides: ['media','title','description','creator','license','attribution'], note: 'برای حالت Safe فقط PD/CC0/CC BY را نگه دارید.'
     },
     {
-      id: 'nasa', name: 'NASA Image and Video Library', types: ['image', 'video', 'podcast'], live: true, auth: 'none', mode: 'NASA Media API',
+      id: 'nasa', name: 'NASA Image and Video Library', types: ['image', 'video', 'podcast'], live: true, auth: 'none', mode: 'NASA Media API', quality_tier: 'A', curated_capable: true,
       topics: ['فضا', 'زمین', 'علم', 'ماموریت‌ها', 'فضانوردی'],
       rights: 'NASA Media Usage Guidelines؛ لوگو، افراد و محتوای ثالث جدا بررسی شود.',
       homepage: 'https://images.nasa.gov/', provides: ['media','poster','title','description','keywords','source'], note: 'برای تصویر/ویدیو/صدا بسیار مناسب است.'
@@ -100,13 +103,31 @@ function sourceRegistry(env) {
       homepage: 'https://archive.org/details/audio', provides: ['audio','cover','title','description','creator','license'], note: 'به‌صورت پیش‌فرض در حالت Review قرار می‌گیرد.'
     },
     {
-      id: 'smithsonian', name: 'Smithsonian Open Access', types: ['image'], live: Boolean(env.SI_API_KEY), auth: 'SI_API_KEY', mode: 'Open Access API',
+      id: 'met', name: 'The Metropolitan Museum of Art', types: ['image'], live: true, auth: 'none', mode: 'Open Access API', quality_tier: 'A', curated_capable: true,
+      topics: ['هنر', 'عکاسی', 'فرهنگ', 'تاریخ', 'طراحی'],
+      rights: 'فقط اشیای isPublicDomain با تصویر؛ داده و تصاویر Open Access برای استفاده تجاری و غیرتجاری.',
+      homepage: 'https://www.metmuseum.org/art/collection', provides: ['image','title','artist','date','department','source'], note: 'فقط رکوردهای Public Domain دارای تصویر وارد Candidate Queue می‌شوند و بازبینی انسانی همچنان لازم است.'
+    },
+    {
+      id: 'cleveland', name: 'Cleveland Museum of Art', types: ['image'], live: true, auth: 'none', mode: 'Open Access API', quality_tier: 'A', curated_capable: true,
+      topics: ['هنر', 'عکاسی', 'فرهنگ', 'تاریخ'],
+      rights: 'Open Access dataset و image assets منتخب تحت CC0.',
+      homepage: 'https://www.clevelandart.org/open-access-api', provides: ['image','title','artist','description','source'], note: 'منبع CC0 با کیفیت بالا برای Gallery Review.'
+    },
+    {
+      id: 'artic', name: 'Art Institute of Chicago', types: ['image'], live: true, auth: 'none', mode: 'Public API + IIIF', quality_tier: 'A', curated_capable: true,
+      topics: ['هنر', 'عکاسی', 'فرهنگ', 'طراحی'],
+      rights: 'فقط is_public_domain=true؛ تصویر از IIIF.',
+      homepage: 'https://www.artic.edu/open-access/open-source', provides: ['image','title','artist','date','source'], note: 'تصاویر Public Domain با IIIF 843px برای Candidate Preview.'
+    },
+    {
+      id: 'smithsonian', name: 'Smithsonian Open Access', types: ['image'], live: Boolean(env.SI_API_KEY), auth: 'SI_API_KEY', mode: 'Open Access API', quality_tier: 'A', curated_capable: true,
       topics: ['هنر', 'تاریخ', 'فرهنگ', 'علم', 'اشیای موزه‌ای'],
       rights: 'برای فایل‌های Open Access معمولاً CC0.',
       homepage: 'https://www.si.edu/openaccess', provides: ['image','title','description','source','license'], note: env.SI_API_KEY ? 'متصل است.' : 'برای اتصال، API key رایگان Smithsonian لازم است.'
     },
     {
-      id: 'pixabay', name: 'Pixabay', types: ['image', 'video'], live: Boolean(env.PIXABAY_API_KEY), auth: 'PIXABAY_API_KEY', mode: 'Pixabay API',
+      id: 'pixabay', name: 'Pixabay', types: ['image', 'video'], live: Boolean(env.PIXABAY_API_KEY), auth: 'PIXABAY_API_KEY', mode: 'Pixabay API', quality_tier: 'A', curated_capable: true,
       topics: ['استوک', 'سفر', 'طبیعت', 'مردم', 'غذا', 'تکنولوژی'],
       rights: 'Pixabay Content License؛ بازتوزیع Standalone ممنوع.',
       homepage: 'https://pixabay.com/', provides: ['media','poster','duration(video)','tags','creator','source'], note: env.PIXABAY_API_KEY ? 'متصل است.' : 'برای اتصال، حساب و API key لازم است. Mass download مجاز نیست.'
@@ -120,6 +141,7 @@ async function handleSearch(url, env, ctx) {
   const q = (url.searchParams.get('q') || '').trim();
   const limit = clampInt(url.searchParams.get('limit'), 1, 100, 24);
   const safe = url.searchParams.get('safe') !== '0';
+  const curated = url.searchParams.get('curated') !== '0';
   const offset = clampInt(url.searchParams.get('offset'), 0, 100000, 0);
   if (!q && source !== 'librivox') return json({ error: 'عبارت جستجو لازم است.' }, 400);
 
@@ -128,25 +150,31 @@ async function handleSearch(url, env, ctx) {
 
   const tasks = sources.map(async s => {
     try {
-      const items = await searchSource(s.id, type, q, limit, offset, safe, env, ctx);
+      const items = await searchSource(s.id, type, q, limit, offset, safe, curated, env, ctx);
       return { source: s.id, ok: true, items };
     } catch (error) {
       return { source: s.id, ok: false, error: error?.message || String(error), items: [] };
     }
   });
   const results = await Promise.all(tasks);
-  const items = results.flatMap(r => r.items).slice(0, limit * Math.max(1, sources.length));
-  return json({ items, providers: results.map(({ source, ok, error, items }) => ({ source, ok, error, count: items.length })) });
+  const items = results.flatMap(r => r.items)
+    .map(item => ({ ...item, quality_score: scoreCandidate(item, curated) }))
+    .sort((a,b) => (b.quality_score || 0) - (a.quality_score || 0))
+    .slice(0, limit * Math.max(1, sources.length));
+  return json({ items, curated, providers: results.map(({ source, ok, error, items }) => ({ source, ok, error, count: items.length })) });
 }
 
-async function searchSource(source, type, q, limit, offset, safe, env, ctx) {
+async function searchSource(source, type, q, limit, offset, safe, curated, env, ctx) {
   if (source === 'gutenberg') return searchGutenberg(q, Math.min(limit, 25));
   if (source === 'wikisource') return searchWikisource(q, Math.min(limit, 25));
   if (source === 'wikipedia') return searchWikipedia(q, Math.min(limit, 25), ctx);
-  if (source === 'wikimedia') return searchWikimedia(type, q, Math.min(limit, 50), safe, ctx);
+  if (source === 'wikimedia') return searchWikimedia(type, q, Math.min(limit, 50), safe, curated, ctx);
   if (source === 'nasa') return searchNasa(type, q, Math.min(limit, 100), ctx);
   if (source === 'librivox') return searchLibriVox(q, Math.min(limit, 100), offset, ctx);
   if (source === 'internetarchive') return searchInternetArchive(type, q, Math.min(limit, 50), ctx);
+  if (source === 'met') return searchMet(q, Math.min(limit, 12), ctx);
+  if (source === 'cleveland') return searchCleveland(q, Math.min(limit, 24), ctx);
+  if (source === 'artic') return searchArtic(q, Math.min(limit, 24), ctx);
   if (source === 'smithsonian') return searchSmithsonian(q, Math.min(limit, 50), env, ctx);
   if (source === 'pixabay') return searchPixabay(type, q, Math.min(limit, 50), env, ctx);
   return [];
@@ -255,12 +283,12 @@ async function searchWikipedia(q, limit, ctx) {
   })).filter(x => countWords(x.description) >= 40);
 }
 
-async function searchWikimedia(type, q, limit, safe, ctx) {
+async function searchWikimedia(type, q, limit, safe, curated, ctx) {
   const mediaWord = type === 'image' ? 'image' : type === 'video' ? 'video' : 'audio';
   const api = new URL('https://commons.wikimedia.org/w/api.php');
   api.search = new URLSearchParams({
     action: 'query', generator: 'search', gsrsearch: `${q} ${mediaWord}`, gsrnamespace: '6', gsrlimit: String(limit),
-    prop: 'imageinfo|info', iiprop: 'url|mime|extmetadata', iiurlwidth: '900', inprop: 'url', format: 'json', origin: '*'
+    prop: 'imageinfo|info|categories', iiprop: 'url|mime|size|extmetadata', iiurlwidth: '1200', cllimit: 'max', inprop: 'url', format: 'json', origin: '*'
   }).toString();
   const r = await cachedFetch(api.toString(), {}, 1800, ctx);
   if (!r.ok) throw new Error(`Wikimedia ${r.status}`);
@@ -278,13 +306,17 @@ async function searchWikimedia(type, q, limit, safe, ctx) {
     const desc = cleanMeta(meta.ImageDescription?.value || meta.ObjectName?.value || '');
     const rights = evaluateCommonsLicense(lic, licUrl);
     if (safe && !rights.safe) return null;
+    const cats = (p.categories || []).map(c => c.title || '').filter(Boolean);
+    const isCurated = cats.some(c => /featured pictures|quality images|featured media/i.test(c));
+    if (curated && !isCurated) return null;
     return normalizeItem({
       id: `wikimedia:${p.pageid}`, source: 'wikimedia', type, title: p.title.replace(/^File:/, ''),
       description: desc, creator: artist, source_url: p.fullurl || '', media_url: ii.url || '',
       thumbnail_url: ii.thumburl || ii.url || '', language: '', duration: null, license: lic || 'Unknown', license_url: licUrl,
       commercial_ok: rights.commercial, review_required: !rights.safe || rights.shareAlike,
       duration: parseDurationSeconds(meta.Duration?.value || meta.Length?.value || ''),
-      raw: { mime, shareAlike: rights.shareAlike }
+      width: Number(ii.width || 0) || null, height: Number(ii.height || 0) || null, curated: isCurated,
+      raw: { mime, shareAlike: rights.shareAlike, categories: cats }
     });
   }).filter(Boolean);
 }
@@ -433,6 +465,88 @@ async function searchInternetArchive(type, q, limit, ctx) {
       raw: { identifier: d.identifier, subjects: d.subject || [], collections }
     });
   });
+}
+
+async function searchMet(q, limit, ctx) {
+  const search = new URL('https://collectionapi.metmuseum.org/public/collection/v1/search');
+  search.search = new URLSearchParams({ q, hasImages: 'true' }).toString();
+  const sr = await cachedFetch(search.toString(), {}, 3600, ctx);
+  if (!sr.ok) throw new Error(`Met search ${sr.status}`);
+  const sd = await sr.json();
+  const ids = (sd.objectIDs || []).slice(0, Math.min(limit * 3, 30));
+  const out = [];
+  for (const id of ids) {
+    if (out.length >= limit) break;
+    try {
+      const u = `https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`;
+      const r = await cachedFetch(u, {}, 86400, ctx);
+      if (!r.ok) continue;
+      const o = await r.json();
+      if (!o.isPublicDomain || !o.primaryImage) continue;
+      const desc = [o.objectDate, o.medium, o.culture, o.department].filter(Boolean).join(' • ');
+      out.push(normalizeItem({
+        id: `met:${o.objectID}`, source: 'met', type: 'image', title: o.title || `Met ${o.objectID}`,
+        description: desc, creator: o.artistDisplayName || o.culture || 'The Metropolitan Museum of Art',
+        source_url: o.objectURL || `https://www.metmuseum.org/art/collection/search/${o.objectID}`,
+        media_url: o.primaryImageSmall || o.primaryImage, thumbnail_url: o.primaryImageSmall || o.primaryImage,
+        language: 'en', duration: null, license: 'CC0 / The Met Open Access (Public Domain object)',
+        license_url: 'https://www.metmuseum.org/about-the-met/policies-and-documents/open-access',
+        commercial_ok: true, review_required: true, curated: true,
+        raw: { object_id: o.objectID, department: o.department || '', classification: o.classification || '', tags: (o.tags || []).map(x => x.term).filter(Boolean) }
+      }));
+    } catch (_) {}
+  }
+  return out;
+}
+
+async function searchCleveland(q, limit, ctx) {
+  const api = new URL('https://openaccess-api.clevelandart.org/api/artworks/');
+  api.search = new URLSearchParams({ q, has_image: '1', cc0: '1', limit: String(limit) }).toString();
+  const r = await cachedFetch(api.toString(), {}, 3600, ctx);
+  if (!r.ok) throw new Error(`Cleveland ${r.status}`);
+  const data = await r.json();
+  return (data.data || []).map(o => {
+    const img = o.images?.web?.url || o.images?.print?.url || o.images?.full?.url || '';
+    const thumb = o.images?.web?.url || o.images?.print?.url || img;
+    const creator = Array.isArray(o.creators) ? o.creators.map(c => c.description || c.name).filter(Boolean).join(', ') : '';
+    const desc = normalizeText(o.description || o.wall_description || o.tombstone || [o.creation_date, o.type].filter(Boolean).join(' • '));
+    return normalizeItem({
+      id: `cleveland:${o.id}`, source: 'cleveland', type: 'image', title: o.title || `CMA ${o.id}`,
+      description: desc, creator, source_url: o.url || `https://www.clevelandart.org/art/${o.accession_number || o.id}`,
+      media_url: img, thumbnail_url: thumb, language: 'en', duration: null,
+      license: 'CC0 / Cleveland Museum of Art Open Access', license_url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      commercial_ok: true, review_required: true, curated: true,
+      raw: { accession_number: o.accession_number || '', department: o.department || '', culture: o.culture || [] }
+    });
+  }).filter(x => x.media_url);
+}
+
+async function searchArtic(q, limit, ctx) {
+  const api = new URL('https://api.artic.edu/api/v1/artworks/search');
+  api.search = new URLSearchParams({
+    q,
+    limit: String(limit),
+    'query[term][is_public_domain]': 'true',
+    fields: 'id,title,image_id,artist_display,date_display,thumbnail,description,is_public_domain'
+  }).toString();
+  const r = await cachedFetch(api.toString(), {}, 3600, ctx);
+  if (!r.ok) throw new Error(`ArtIC ${r.status}`);
+  const data = await r.json();
+  const iiif = data.config?.iiif_url || 'https://www.artic.edu/iiif/2';
+  return (data.data || []).map(o => {
+    if (!o.image_id || o.is_public_domain === false) return null;
+    const media = `${iiif}/${o.image_id}/full/843,/0/default.jpg`;
+    return normalizeItem({
+      id: `artic:${o.id}`, source: 'artic', type: 'image', title: o.title || `ArtIC ${o.id}`,
+      description: normalizeText(o.description || o.thumbnail?.alt_text || o.date_display || ''),
+      creator: o.artist_display || '', source_url: `https://www.artic.edu/artworks/${o.id}`,
+      media_url: media, thumbnail_url: media, language: 'en', duration: null,
+      license: 'Public Domain image / Art Institute of Chicago Open Access',
+      license_url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      commercial_ok: true, review_required: true, curated: true,
+      raw: { image_id: o.image_id, date_display: o.date_display || '' }
+    });
+  }).filter(Boolean);
 }
 
 async function searchSmithsonian(q, limit, env, ctx) {
@@ -603,7 +717,12 @@ const PACK_ALLOWED_HOST_SUFFIXES = [
   'archive.org',
   'librivox.org',
   'si.edu',
-  'pixabay.com'
+  'pixabay.com',
+  'metmuseum.org',
+  'collectionapi.metmuseum.org',
+  'clevelandart.org',
+  'openaccess-api.clevelandart.org',
+  'artic.edu'
 ];
 
 function isAllowedPackHost(hostname = '') {
@@ -680,6 +799,8 @@ function rulePrepare(item, learningLanguage, uiLanguage) {
   const readTime = readSource ? Math.max(1, Math.ceil(countWords(readSource) / 190)) : null;
   const theme = ['podcast','music'].includes(item.type) ? deterministicTheme(`${item.source}:${item.id}:${category.key}`) : null;
   const transcript = normalizeText(item.raw?.transcript || item.raw?.resolved_transcript || '');
+  const safety = assessSafety(item);
+  const qualityScore = Number(item.quality_score || scoreCandidate(item, true));
 
   const prepared = {
     schema_version: 'vibe-2',
@@ -727,6 +848,12 @@ function rulePrepare(item, learningLanguage, uiLanguage) {
     runtime_fields: ['publisher_character','published_at','like_count','reply','bookmark','share','play_progress'],
     status: 'draft',
     provider_raw_id: item.id,
+    source_quality_tier: item.source_quality_tier || sourceQualityTier(item.source),
+    curated_source: Boolean(item.curated),
+    quality_score: qualityScore,
+    safety_status: safety.status,
+    safety_flags: safety.flags,
+    human_review_required: true,
     generated_at: new Date().toISOString()
   };
 
@@ -749,7 +876,8 @@ function rulePrepare(item, learningLanguage, uiLanguage) {
   prepared.completeness = validation.completeness;
   prepared.quality_ok = quality.ok;
   prepared.quality_issues = quality.issues;
-  prepared.ready_to_publish = validation.missing.length === 0 && quality.ok && prepared.source.commercial_ok && !prepared.source.review_required;
+  prepared.ready_to_publish = validation.missing.length === 0 && quality.ok && prepared.source.commercial_ok && !prepared.source.review_required && safety.status !== 'blocked';
+  prepared.candidate_ready = validation.missing.length === 0 && quality.ok && prepared.source.commercial_ok && safety.status !== 'blocked';
   prepared.rights_status = !prepared.source.commercial_ok ? 'blocked' : prepared.source.review_required ? 'review' : 'clear';
   return prepared;
 }
@@ -869,12 +997,54 @@ async function handleLibriVoxBatch(url, env, ctx) {
   return json({ items, next_offset: offset + items.length, note: 'LibriVox asks developers to space repeated requests by several seconds.' });
 }
 
+function sourceQualityTier(source) {
+  const a = new Set(['met','cleveland','artic','smithsonian','pixabay','nasa']);
+  const b = new Set(['wikimedia','gutenberg','wikisource','wikipedia','librivox']);
+  if (a.has(source)) return 'A';
+  if (b.has(source)) return 'B';
+  return 'C';
+}
+
+function scoreCandidate(item, curatedMode = true) {
+  let score = sourceQualityTier(item.source) === 'A' ? 78 : sourceQualityTier(item.source) === 'B' ? 66 : 52;
+  if (item.curated || item.raw?.curated) score += 12;
+  if (item.media_url) score += 4;
+  if (item.thumbnail_url) score += 3;
+  if (normalizeText(item.description || '').length > 80) score += 3;
+  if (item.creator) score += 2;
+  if (Number(item.width || 0) >= 1200) score += 4;
+  if (curatedMode && sourceQualityTier(item.source) === 'C') score -= 8;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function assessSafety(item) {
+  const raw = [
+    item.title, item.description, item.creator,
+    ...(Array.isArray(item.raw?.keywords) ? item.raw.keywords : []),
+    ...(Array.isArray(item.raw?.subjects) ? item.raw.subjects : []),
+    ...(Array.isArray(item.raw?.tags) ? item.raw.tags : []),
+    item.raw?.tags || ''
+  ].join(' ').toLowerCase();
+  const flags = [];
+  const patterns = [
+    ['sexual', /porn|explicit sex|sexual intercourse|genital|fetish|erotic/i],
+    ['nudity', /\bnude\b|\bnudity\b|naked|topless/i],
+    ['graphic_violence', /gore|beheading|dismember|graphic violence|bloody corpse/i],
+    ['self_harm', /suicide|self[- ]harm/i],
+    ['drugs', /heroin|cocaine|methamphetamine|drug abuse/i]
+  ];
+  for (const [name,re] of patterns) if (re.test(raw)) flags.push(name);
+  const blocked = flags.some(x => x === 'sexual' || x === 'graphic_violence');
+  return { status: blocked ? 'blocked' : (flags.length ? 'flagged' : 'unverified'), flags };
+}
+
 function normalizeItem(x) {
   return {
     id: x.id, source: x.source, type: x.type, title: x.title || '', description: x.description || '', creator: x.creator || '',
     source_url: x.source_url || '', media_url: x.media_url || '', thumbnail_url: x.thumbnail_url || '', language: x.language || '',
-    duration: x.duration || null, license: x.license || '', license_url: x.license_url || '', commercial_ok: x.commercial_ok !== false,
-    review_required: Boolean(x.review_required), raw: x.raw || {}
+    duration: x.duration || null, width: x.width || null, height: x.height || null, curated: Boolean(x.curated),
+    license: x.license || '', license_url: x.license_url || '', commercial_ok: x.commercial_ok !== false,
+    review_required: Boolean(x.review_required), source_quality_tier: x.source_quality_tier || sourceQualityTier(x.source), raw: x.raw || {}
   };
 }
 
