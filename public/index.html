@@ -47,7 +47,7 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
       <button data-view="manual"><span class="ico">⌕</span> جستجوی دستی</button>
       <button data-view="sources"><span class="ico">◫</span> منابع متصل</button>
     </div>
-    <div class="sidebox"><b><span class="dot"></span>نسخه 0.6.1 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
+    <div class="sidebox"><b><span class="dot"></span>نسخه 0.6.2 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
   </aside>
 
   <main class="main">
@@ -137,7 +137,7 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
               <button class="btn" data-pack-type="podcast" disabled>ZIP پادکست</button>
               <button class="btn" data-pack-type="music" disabled>ZIP موسیقی</button>
             </div>
-            <div class="statusline" id="packStatus">ساختار Pack: manifest.json + report.json + licenses.json + پوشه json + پوشه‌های text / image / video / podcast / music. بعد از ساخت، لینک دانلود واقعی همین‌جا ظاهر می‌شود.</div>
+            <div class="statusline" id="packStatus">ساختار Pack: manifest.json + report.json + licenses.json + پوشه json + پوشه‌های text / image / video / podcast / music. برای اینکه Safari روی فایل‌های خیلی بزرگ گیر نکند، Pack مرورگر برای هر فایل Timeout و سقف حجم دارد؛ فایل‌های ردشده در report.json ثبت می‌شوند.</div>
           </div>
         </div>
       </div>
@@ -454,7 +454,7 @@ function cleanRecord(x){
 }
 function resultsPayload(){
   return {
-    engine_version:"0.6.1",
+    engine_version:"0.6.2",
     created_at:new Date().toISOString(),
     config:{learning_language:document.getElementById("learningLanguage").value,ui_language:document.getElementById("uiLanguage").value,counts:countsConfig(),topics:state.topics,pool_filter:document.getElementById("poolFilter").value,max_topics:Number(document.getElementById("maxTopics").value)||0,respect_type_fit:document.getElementById("respectTypeFit").checked,topic_universe_version:state.universeMeta&&state.universeMeta.version||null},
     counts:{accepted:state.accepted.length,rejected:state.rejected.length,review:state.review.length,duplicates:state.duplicates,errors:state.errors,provider_warnings:state.providerWarnings||0,rejection_reasons:state.rejectionReasons||{}},
@@ -491,6 +491,17 @@ function offerPackDownload(blob,name,summary){
   box.appendChild(a);
 }
 
+const PACK_MEDIA_LIMITS = {
+  image: 15 * 1024 * 1024,
+  video: 40 * 1024 * 1024,
+  podcast: 25 * 1024 * 1024,
+  music: 25 * 1024 * 1024,
+  subtitle: 2 * 1024 * 1024,
+  total: 250 * 1024 * 1024,
+  timeout_ms: 25000
+};
+let currentPackBytes = 0;
+
 async function buildPack(filterType){
   const items=state.accepted.filter(function(x){return !filterType||x.type===filterType});
   if(!items.length)return;
@@ -498,7 +509,8 @@ async function buildPack(filterType){
   const label=filterType?TYPE_LABEL[filterType]:"کامل";
   packStatus("در حال ساخت Pack "+label+" — 0 / "+items.length);
   const entries=[];
-  const report={engine_version:"0.6.1",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[]};
+  currentPackBytes=0;
+  const report={engine_version:"0.6.2",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[],media_skipped:[],included_media_bytes:0};
   const licenses={};
   const manifest=resultsPayload();manifest.items=items.map(cleanRecord);
   entries.push({path:"manifest.json",data:jsonBytes(manifest)});
@@ -508,7 +520,7 @@ async function buildPack(filterType){
 
   let i=0;
   for(const item of items){
-    i++;packStatus("در حال ساخت Pack "+label+" — "+i+" / "+items.length+" • "+item.title);
+    i++;packStatus("در حال ساخت Pack "+label+" — "+i+" / "+items.length+" • "+item.title+" • حجم مدیای اضافه‌شده "+Math.round(currentPackBytes/1024/1024)+" MB");
     const id=safeName(String(item.content_id||item.provider_raw_id||("item-"+i)));
     const base=item.type+"/"+id+"/";
     const itemJson=cleanRecord(item);
@@ -522,33 +534,68 @@ async function buildPack(filterType){
       entries.push({path:base+"transcript.txt",data:textBytes(item.transcript)});
     }
     if(item.subtitle_url){
-      await tryAddRemote(entries,base+"subtitle"+guessExt(item.subtitle_url,"text/vtt",".vtt"),item.subtitle_url,report);
+      await tryAddRemote(entries,base+"subtitle"+guessExt(item.subtitle_url,"text/vtt",".vtt"),item.subtitle_url,report,false,"subtitle");
     }
     if(item.media_url){
       const name=item.type==="image"?"image":item.type==="video"?"video":item.type==="podcast"?"audio":item.type==="music"?"audio":"media";
-      await tryAddRemote(entries,base+name,item.media_url,report,true);
+      await tryAddRemote(entries,base+name,item.media_url,report,true,item.type);
     }
     if(item.poster_url&&(item.type==="video"||item.type==="music")){
-      await tryAddRemote(entries,base+(item.type==="music"?"cover":"poster"),item.poster_url,report,true);
+      await tryAddRemote(entries,base+(item.type==="music"?"cover":"poster"),item.poster_url,report,true,"image");
     }
   }
   entries[1]={path:"report.json",data:jsonBytes(report)};
   packStatus("در حال نوشتن ZIP...");
   const blob=makeZip(entries);
   const packName="Vibe-Pack-"+(filterType||"ALL")+"-"+dateStamp()+".zip";
-  offerPackDownload(blob,packName,"Pack "+label+" آماده شد. "+items.length+" آیتم؛ خطای دانلود مدیا: "+report.media_download_errors.length+".");
+  offerPackDownload(blob,packName,"Pack "+label+" آماده شد. "+items.length+" آیتم؛ مدیای ردشده به‌دلیل حجم/سقف: "+report.media_skipped.length+"؛ خطای دانلود: "+report.media_download_errors.length+".");
   document.getElementById("packStatus").scrollIntoView({behavior:"smooth",block:"center"});
 }
 
-async function tryAddRemote(entries,baseName,url,report,autoExt){
+async function tryAddRemote(entries,baseName,url,report,autoExt,kind){
+  const limit=PACK_MEDIA_LIMITS[kind]||PACK_MEDIA_LIMITS.image;
+  const controller=new AbortController();
+  const timer=setTimeout(function(){controller.abort()},PACK_MEDIA_LIMITS.timeout_ms);
   try{
-    const r=await fetch("/api/proxy?url="+encodeURIComponent(url));
+    if(currentPackBytes>=PACK_MEDIA_LIMITS.total){
+      report.media_skipped.push({url:url,reason:"pack_total_limit",kind:kind});
+      return;
+    }
+    const r=await fetch("/api/proxy?url="+encodeURIComponent(url)+"&max_bytes="+encodeURIComponent(limit),{signal:controller.signal});
+    if(r.status===413){
+      report.media_skipped.push({url:url,reason:"file_too_large",kind:kind,limit_bytes:limit});
+      return;
+    }
     if(!r.ok)throw new Error("HTTP "+r.status);
+    const declared=Number(r.headers.get("content-length")||0);
+    if(declared&&declared>limit){
+      report.media_skipped.push({url:url,reason:"file_too_large",kind:kind,size_bytes:declared,limit_bytes:limit});
+      return;
+    }
+    if(declared&&currentPackBytes+declared>PACK_MEDIA_LIMITS.total){
+      report.media_skipped.push({url:url,reason:"pack_total_limit",kind:kind,size_bytes:declared});
+      return;
+    }
     const type=r.headers.get("content-type")||"";
     const bytes=new Uint8Array(await r.arrayBuffer());
+    if(bytes.length>limit){
+      report.media_skipped.push({url:url,reason:"file_too_large_after_download",kind:kind,size_bytes:bytes.length,limit_bytes:limit});
+      return;
+    }
+    if(currentPackBytes+bytes.length>PACK_MEDIA_LIMITS.total){
+      report.media_skipped.push({url:url,reason:"pack_total_limit",kind:kind,size_bytes:bytes.length});
+      return;
+    }
+    currentPackBytes+=bytes.length;
+    report.included_media_bytes=currentPackBytes;
     const ext=autoExt?guessExt(url,type,""):"";
     entries.push({path:baseName+ext,data:bytes});
-  }catch(err){report.media_download_errors.push({url:url,error:String(err&&err.message||err)})}
+  }catch(err){
+    const msg=err&&err.name==="AbortError"?"timeout_25s":String(err&&err.message||err);
+    report.media_download_errors.push({url:url,error:msg,kind:kind});
+  }finally{
+    clearTimeout(timer);
+  }
 }
 function guessExt(url,type,fallback){
   const t=String(type||"").toLowerCase();
