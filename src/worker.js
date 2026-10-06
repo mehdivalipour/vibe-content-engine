@@ -3,7 +3,7 @@ const JSON_HEADERS = {
   'cache-control': 'no-store',
 };
 
-const SOURCE_USER_AGENT = 'VibeContentEngine/0.6.0 (https://speakme.ir/)';
+const SOURCE_USER_AGENT = 'VibeContentEngine/0.6.1 (https://speakme.ir/)';
 
 function withSourceHeaders(url, options = {}) {
   const headers = new Headers(options.headers || {});
@@ -27,7 +27,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
-      if (url.pathname === '/api/health') return json({ ok: true, version: '0.6.0', now: new Date().toISOString() });
+      if (url.pathname === '/api/health') return json({ ok: true, version: '0.6.1', now: new Date().toISOString() });
       if (url.pathname === '/api/sources') return json({ sources: sourceRegistry(env) });
       if (url.pathname === '/api/proxy' && request.method === 'GET') return handleProxy(url, ctx);
       if (url.pathname === '/api/search') return handleSearch(url, env, ctx);
@@ -70,6 +70,12 @@ function sourceRegistry(env) {
       homepage: 'https://en.wikisource.org/', provides: ['title','extract/body','source','license'], note: 'برای متن‌های کوتاه و منبع‌دار مناسب است.'
     },
     {
+      id: 'wikipedia', name: 'Wikipedia', types: ['text'], live: true, auth: 'none', mode: 'MediaWiki API',
+      topics: ['دانستنی', 'علم', 'تاریخ', 'فرهنگ', 'فناوری', 'سفر'],
+      rights: 'CC BY-SA 4.0؛ نیازمند Attribution و رعایت ShareAlike است.',
+      homepage: 'https://en.wikipedia.org/', provides: ['title','extract/body','source','license'], note: 'برای پوشش موضوعات عمومی استفاده می‌شود و به‌صورت Review نگه داشته می‌شود.'
+    },
+    {
       id: 'wikimedia', name: 'Wikimedia Commons', types: ['image', 'video', 'podcast', 'music'], live: true, auth: 'none', mode: 'MediaWiki API',
       topics: ['عکس', 'ویدیو', 'صدا', 'موسیقی', 'تاریخ', 'فرهنگ', 'علم'],
       rights: 'مجوز هر فایل جداست؛ موتور فقط مجوز و Attribution را همراه آیتم نگه می‌دارد.',
@@ -88,7 +94,7 @@ function sourceRegistry(env) {
       homepage: 'https://librivox.org/', provides: ['audio','title','description','duration','author','language','source'], note: 'حداکثر 500 رکورد در هر درخواست؛ درخواست‌ها با فاصله انجام شوند.'
     },
     {
-      id: 'internetarchive', name: 'Internet Archive Open Audio', types: ['music'], live: true, auth: 'none', mode: 'Advanced Search API',
+      id: 'internetarchive', name: 'Internet Archive Open Audio', types: ['music', 'podcast'], live: true, auth: 'none', mode: 'Advanced Search API',
       topics: ['موسیقی آزاد', 'ضبط تاریخی', 'صوت آرشیوی'],
       rights: 'مجوز هر آیتم متفاوت است و باید قبل از انتشار تایید شود.',
       homepage: 'https://archive.org/details/audio', provides: ['audio','cover','title','description','creator','license'], note: 'به‌صورت پیش‌فرض در حالت Review قرار می‌گیرد.'
@@ -136,10 +142,11 @@ async function handleSearch(url, env, ctx) {
 async function searchSource(source, type, q, limit, offset, safe, env, ctx) {
   if (source === 'gutenberg') return searchGutenberg(q, Math.min(limit, 25));
   if (source === 'wikisource') return searchWikisource(q, Math.min(limit, 25));
+  if (source === 'wikipedia') return searchWikipedia(q, Math.min(limit, 25), ctx);
   if (source === 'wikimedia') return searchWikimedia(type, q, Math.min(limit, 50), safe, ctx);
   if (source === 'nasa') return searchNasa(type, q, Math.min(limit, 100), ctx);
   if (source === 'librivox') return searchLibriVox(q, Math.min(limit, 100), offset, ctx);
-  if (source === 'internetarchive') return searchInternetArchive(q, Math.min(limit, 50), ctx);
+  if (source === 'internetarchive') return searchInternetArchive(type, q, Math.min(limit, 50), ctx);
   if (source === 'smithsonian') return searchSmithsonian(q, Math.min(limit, 50), env, ctx);
   if (source === 'pixabay') return searchPixabay(type, q, Math.min(limit, 50), env, ctx);
   return [];
@@ -193,7 +200,7 @@ function parseGutenbergOpds(xml) {
       license_url: 'https://www.gutenberg.org/policy/license.html', commercial_ok: true,
       review_required: true, raw: { ebookId, epub: epubLink?.href || '' }
     });
-  }).filter(x => x.title);
+  }).filter(x => x.title && x.raw?.ebookId);
 }
 
 function getXmlTag(xml, tag) {
@@ -229,8 +236,27 @@ async function searchWikisource(q, limit) {
   }));
 }
 
+async function searchWikipedia(q, limit, ctx) {
+  const api = new URL('https://en.wikipedia.org/w/api.php');
+  api.search = new URLSearchParams({
+    action: 'query', generator: 'search', gsrsearch: q, gsrnamespace: '0', gsrlimit: String(limit),
+    prop: 'extracts|info', exintro: '1', explaintext: '1', exchars: '5000', inprop: 'url', format: 'json'
+  }).toString();
+  const r = await cachedFetch(api.toString(), {}, 1800, ctx);
+  if (!r.ok) throw new Error(`Wikipedia ${r.status}`);
+  const data = await r.json();
+  return Object.values(data.query?.pages || {}).map(p => normalizeItem({
+    id: `wikipedia:${p.pageid}`, source: 'wikipedia', type: 'text', title: p.title,
+    description: (p.extract || '').slice(0, 5000), creator: 'Wikipedia contributors',
+    source_url: p.fullurl || `https://en.wikipedia.org/?curid=${p.pageid}`,
+    media_url: p.fullurl || '', thumbnail_url: '', language: 'en', duration: null,
+    license: 'CC BY-SA 4.0', license_url: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    commercial_ok: true, review_required: true, raw: { pageid: p.pageid }
+  })).filter(x => countWords(x.description) >= 40);
+}
+
 async function searchWikimedia(type, q, limit, safe, ctx) {
-  const mediaWord = type === 'image' ? 'image' : type === 'video' ? 'video' : type === 'music' ? 'music audio' : 'audio';
+  const mediaWord = type === 'image' ? 'image' : type === 'video' ? 'video' : 'audio';
   const api = new URL('https://commons.wikimedia.org/w/api.php');
   api.search = new URLSearchParams({
     action: 'query', generator: 'search', gsrsearch: `${q} ${mediaWord}`, gsrnamespace: '6', gsrlimit: String(limit),
@@ -256,7 +282,9 @@ async function searchWikimedia(type, q, limit, safe, ctx) {
       id: `wikimedia:${p.pageid}`, source: 'wikimedia', type, title: p.title.replace(/^File:/, ''),
       description: desc, creator: artist, source_url: p.fullurl || '', media_url: ii.url || '',
       thumbnail_url: ii.thumburl || ii.url || '', language: '', duration: null, license: lic || 'Unknown', license_url: licUrl,
-      commercial_ok: rights.commercial, review_required: !rights.safe || rights.shareAlike, raw: { mime, shareAlike: rights.shareAlike }
+      commercial_ok: rights.commercial, review_required: !rights.safe || rights.shareAlike,
+      duration: parseDurationSeconds(meta.Duration?.value || meta.Length?.value || ''),
+      raw: { mime, shareAlike: rights.shareAlike }
     });
   }).filter(Boolean);
 }
@@ -287,7 +315,7 @@ async function searchNasa(type, q, limit, ctx) {
       id: `nasa:${d.nasa_id}`, source: 'nasa', type, title: d.title || d.nasa_id,
       description: d.description || d.description_508 || '', creator: d.photographer || d.secondary_creator || d.center || 'NASA',
       source_url: `https://images.nasa.gov/details/${encodeURIComponent(d.nasa_id || '')}`,
-      media_url: '', thumbnail_url: preview, language: 'en', duration: null,
+      media_url: '', thumbnail_url: preview, language: 'en', duration: parseDurationSeconds(d.duration || d.duration_seconds || ''),
       license: 'NASA Media Usage Guidelines', license_url: 'https://www.nasa.gov/nasa-brand-center/images-and-media/',
       commercial_ok: true, review_required: true, raw: { nasa_id: d.nasa_id, keywords: d.keywords || [], date_created: d.date_created || '', media_type: mediaType }
     });
@@ -324,6 +352,19 @@ async function searchLibriVox(q, limit, offset, ctx) {
     attempts.push(pathApi.toString());
   }
 
+  if (q) {
+    const stop = new Set(['the','a','an','of','and','or','for','to','in','on','with','true','history','stories','story','podcast','audio','audiobook']);
+    const coreWords = String(q).toLowerCase().match(/[a-z][a-z-]{2,}/g) || [];
+    const core = coreWords.filter(w => !stop.has(w)).sort((a,b) => b.length-a.length)[0] || '';
+    if (core && core !== q.toLowerCase()) {
+      const coreApi = new URL('https://librivox.org/api/feed/audiobooks');
+      coreApi.search = new URLSearchParams({
+        format: 'json', coverart: '1', limit: String(safeLimit), offset: String(offset || 0), fields, title: core
+      }).toString();
+      attempts.push(coreApi.toString());
+    }
+  }
+
   let lastError = 'LibriVox request failed';
   for (const endpoint of attempts) {
     try {
@@ -355,28 +396,41 @@ async function searchLibriVox(q, limit, offset, ctx) {
   throw new Error(lastError);
 }
 
-async function searchInternetArchive(q, limit, ctx) {
-  const searchQ = `mediatype:audio AND (${q ? `title:(${q}) OR subject:(${q})` : 'collection:opensource_audio'})`;
+async function searchInternetArchive(type, q, limit, ctx) {
+  const term = q ? `(title:(${q}) OR subject:(${q}) OR description:(${q}))` : '*:*';
+  const scope = type === 'podcast'
+    ? 'mediatype:audio AND collection:librivoxaudio'
+    : 'mediatype:audio';
+  const searchQ = `${scope} AND ${term}`;
   const api = new URL('https://archive.org/advancedsearch.php');
   const p = new URLSearchParams();
-  p.set('q', searchQ); p.append('fl[]', 'identifier'); p.append('fl[]', 'title'); p.append('fl[]', 'creator');
-  p.append('fl[]', 'description'); p.append('fl[]', 'licenseurl'); p.append('fl[]', 'subject'); p.set('rows', String(limit)); p.set('page', '1'); p.set('output', 'json');
+  p.set('q', searchQ);
+  ['identifier','title','creator','description','licenseurl','subject','collection'].forEach(f => p.append('fl[]', f));
+  p.set('rows', String(limit)); p.set('page', '1'); p.set('output', 'json');
   api.search = p.toString();
   const r = await cachedFetch(api.toString(), {}, 1800, ctx);
   if (!r.ok) throw new Error(`Internet Archive ${r.status}`);
   const data = await r.json();
   return (data.response?.docs || []).map(d => {
-    const license = Array.isArray(d.licenseurl) ? d.licenseurl[0] : (d.licenseurl || 'Unknown');
-    const evald = evaluateCommonsLicense('', license);
+    const licenseRaw = Array.isArray(d.licenseurl) ? d.licenseurl[0] : (d.licenseurl || '');
+    const collections = Array.isArray(d.collection) ? d.collection : (d.collection ? [d.collection] : []);
+    const isLibriVox = type === 'podcast' || collections.includes('librivoxaudio');
+    const evald = isLibriVox ? { commercial: true } : evaluateCommonsLicense('', licenseRaw);
+    const description = Array.isArray(d.description) ? d.description.join(' ') : (d.description || '');
+    const creator = Array.isArray(d.creator) ? d.creator.join(', ') : (d.creator || '');
     return normalizeItem({
-      id: `internetarchive:${d.identifier}`, source: 'internetarchive', type: 'music', title: d.title || d.identifier,
-      description: Array.isArray(d.description) ? d.description.join(' ') : (d.description || ''),
-      creator: Array.isArray(d.creator) ? d.creator.join(', ') : (d.creator || ''),
+      id: `internetarchive:${d.identifier}`, source: 'internetarchive', type,
+      title: d.title || d.identifier,
+      description: description || (creator ? `${type === 'podcast' ? 'Audiobook' : 'Audio recording'} by ${creator}` : ''),
+      creator,
       source_url: `https://archive.org/details/${encodeURIComponent(d.identifier)}`,
       media_url: `https://archive.org/metadata/${encodeURIComponent(d.identifier)}`,
       thumbnail_url: `https://archive.org/services/img/${encodeURIComponent(d.identifier)}`,
-      language: '', duration: null, license: license, license_url: license.startsWith('http') ? license : '',
-      commercial_ok: evald.commercial, review_required: true, raw: { identifier: d.identifier, subjects: d.subject || [] }
+      language: '', duration: null,
+      license: isLibriVox ? 'LibriVox recordings: Public Domain in the U.S.' : (licenseRaw || 'Unknown'),
+      license_url: isLibriVox ? 'https://librivox.org/pages/public-domain/' : (licenseRaw.startsWith('http') ? licenseRaw : ''),
+      commercial_ok: evald.commercial, review_required: true,
+      raw: { identifier: d.identifier, subjects: d.subject || [], collections }
     });
   });
 }
@@ -455,6 +509,20 @@ async function handleResolve(request, env, ctx) {
     }
     return json({ item });
   }
+  if (item.source === 'wikipedia') {
+    const pageid = item.raw?.pageid;
+    if (pageid) {
+      const api = new URL('https://en.wikipedia.org/w/api.php');
+      api.search = new URLSearchParams({ action: 'query', pageids: String(pageid), prop: 'extracts', explaintext: '1', exchars: '30000', format: 'json' }).toString();
+      const r = await cachedFetch(api.toString(), {}, 3600, ctx);
+      if (r.ok) {
+        const data = await r.json();
+        const page = data.query?.pages?.[String(pageid)] || {};
+        return json({ item: { ...item, raw: { ...(item.raw || {}), resolved_text: (page.extract || '').slice(0, 60000) } } });
+      }
+    }
+    return json({ item });
+  }
   if (item.source === 'nasa') {
     const nasaId = item.raw?.nasa_id || String(item.id || '').replace(/^nasa:/, '');
     const r = await cachedFetch(`https://images-api.nasa.gov/asset/${encodeURIComponent(nasaId)}`, {}, 3600, ctx);
@@ -472,7 +540,7 @@ async function handleResolve(request, env, ctx) {
     const files = (data.files || []).filter(f => /audio|ogg|mp3|flac/i.test(`${f.format || ''} ${f.name || ''}`));
     const chosen = files.find(f => /VBR MP3|MP3/i.test(f.format || '')) || files[0];
     const media = chosen?.name ? `https://archive.org/download/${encodeURIComponent(identifier)}/${encodePath(chosen.name)}` : '';
-    return json({ item: { ...item, media_url: media || item.media_url, duration: item.duration || Number(chosen?.length || 0) || null, raw: { ...(item.raw || {}), file: chosen || null } } });
+    return json({ item: { ...item, media_url: media || item.media_url, duration: item.duration || parseDurationSeconds(chosen?.length || '') || null, raw: { ...(item.raw || {}), file: chosen || null } } });
   }
   if (item.source === 'librivox') {
     const id = String(item.id || '').replace(/^librivox:/, '');
@@ -594,7 +662,8 @@ async function handlePrepare(request, env) {
 }
 
 function rulePrepare(item, learningLanguage, uiLanguage) {
-  const description = normalizeText(item.description || '');
+  const sourceDescription = normalizeText(item.description || '');
+  const description = sourceDescription || fallbackDescription(item);
   const sourceText = normalizeText(item.raw?.resolved_text || '');
   const title = normalizeText(item.title || 'Untitled');
   const category = inferCategory(item);
@@ -620,7 +689,7 @@ function rulePrepare(item, learningLanguage, uiLanguage) {
     },
     field_origins: {
       title: 'source',
-      description: description ? 'source' : 'missing',
+      description: sourceDescription ? 'source' : (description ? 'rules-fallback' : 'missing'),
       body: body ? (sourceText ? 'source-resolved' : 'source-metadata') : 'missing',
       category: 'rules',
       read_time_min: readTime ? 'calculated' : 'missing',
@@ -667,12 +736,44 @@ function rulePrepare(item, learningLanguage, uiLanguage) {
   }
 
   const validation = validatePrepared(prepared);
+  const quality = qualityPrepared(prepared);
   prepared.required_fields = validation.required;
   prepared.missing_required = validation.missing;
   prepared.completeness = validation.completeness;
-  prepared.ready_to_publish = validation.missing.length === 0 && prepared.source.commercial_ok && !prepared.source.review_required;
+  prepared.quality_ok = quality.ok;
+  prepared.quality_issues = quality.issues;
+  prepared.ready_to_publish = validation.missing.length === 0 && quality.ok && prepared.source.commercial_ok && !prepared.source.review_required;
   prepared.rights_status = !prepared.source.commercial_ok ? 'blocked' : prepared.source.review_required ? 'review' : 'clear';
   return prepared;
+}
+
+function fallbackDescription(item) {
+  const title = normalizeText(item.title || '');
+  const creator = normalizeText(item.creator || '');
+  if (item.type === 'podcast') return creator ? `Public-domain spoken-word recording by ${creator}.` : (title ? `Public-domain spoken-word recording: ${title}.` : '');
+  if (item.type === 'music') return creator ? `Openly licensed audio recording by ${creator}.` : (title ? `Openly licensed audio recording: ${title}.` : '');
+  if (item.type === 'video') return creator ? `${title} — video by ${creator}.` : title;
+  if (item.type === 'image') return creator ? `${title} — image by ${creator}.` : title;
+  return '';
+}
+
+function parseDurationSeconds(value) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value;
+  const s = String(value).trim();
+  if (/^\d+(?:\.\d+)?$/.test(s)) return Number(s);
+  const parts = s.split(':').map(Number);
+  if (parts.some(n => !Number.isFinite(n))) return null;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return null;
+}
+
+function qualityPrepared(obj) {
+  const issues = [];
+  if (obj.type === 'text' && countWords(obj.body || '') < 35) issues.push('text_too_short');
+  if (['image','video','podcast','music'].includes(obj.type) && countWords(obj.description || '') < 2) issues.push('description_too_short');
+  return { ok: issues.length === 0, issues };
 }
 
 function requiredFieldsForType(type) {
@@ -680,9 +781,9 @@ function requiredFieldsForType(type) {
   const map = {
     text: ['body','read_time_min'],
     image: ['media_url','title','description','read_time_min'],
-    video: ['media_url','poster_url','duration_sec','title','description','category_label'],
-    podcast: ['media_url','duration_sec','title','description','category_label','theme'],
-    music: ['media_url','poster_url','duration_sec','title','description','category_label','theme']
+    video: ['media_url','poster_url','title','description','category_label'],
+    podcast: ['media_url','title','description','category_label','theme'],
+    music: ['media_url','title','description','category_label','theme']
   };
   return [...common, ...(map[type] || [])];
 }
