@@ -1,4 +1,4 @@
-# Vibe Content Engine v0.5.1 — Batch Content Factory بدون AI
+# Vibe Content Engine v0.5.2 — Batch Content Factory بدون AI
 
 این نسخه موتور محتوای Vibe را با معماری **Rules-only** اجرا می‌کند. هیچ Gemini، OpenAI یا LLM در مسیر Import/Prepare وجود ندارد.
 
@@ -172,7 +172,7 @@ npx wrangler secret put PIXABAY_API_KEY
 - هدف: جلوگیری از 403 ناشی از Client ناشناس و سازگاری بهتر با محدودیت های Wikimedia.
 
 
-## v0.5.1 — Batch Content Factory
+## v0.5.2 — Batch Content Factory
 
 نسخه 0.5 موتور را از جستجوی تک به تک به کارخانه محتوای Batch تبدیل می‌کند.
 
@@ -225,9 +225,17 @@ Vibe-Pack/
 Pack کامل برای Batchهای خیلی بزرگ ممکن است سنگین باشد. UI علاوه بر Pack کامل، ZIP جدا برای Text / Image / Video / Podcast / Music می‌دهد.
 
 
-## v0.5.1 — Batch resolve fix
+## v0.5.2 — Batch resolve fix
 
 - مشکل اصلی Batch 0.5 رفع شد: UI آیتم را داخل `{item: ...}` می فرستاد ولی Worker انتظار خود آیتم را داشت؛ در نتیجه Resolve همه آیتم ها با 400 رد می شد.
 - Worker حالا هر دو شکل payload را می پذیرد.
 - UI فرمت canonical مستقیم را می فرستد.
 - خطاهای Provider در آمار Batch به عنوان warning جدا می شوند و دیگر تعداد Error را مصنوعی بالا نمی برند.
+
+
+## v0.5.2 — Safari ZIP download fix
+
+- در Safari دانلود خودکار ZIP بعد از عملیات async ممکن بود به دلیل پایان یافتن user activation مسدود شود.
+- Pack حالا ابتدا ساخته می شود و سپس یک لینک واقعی «دانلود فایل ZIP آماده» داخل پنل خروجی نمایش داده می شود.
+- کاربر روی همان لینک کلیک می کند؛ بنابراین دانلود در Safari و مرورگرهای سخت گیرتر قابل اتکاتر است.
+- Object URL قبلی هنگام Reset آزاد می شود.
