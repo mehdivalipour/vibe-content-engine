@@ -47,7 +47,7 @@ label.lbl{display:block;font-size:11px;font-weight:700;margin-bottom:7px;color:#
       <button data-view="manual"><span class="ico">⌕</span> جستجوی دستی</button>
       <button data-view="sources"><span class="ico">◫</span> منابع متصل</button>
     </div>
-    <div class="sidebox"><b><span class="dot"></span>نسخه 0.5.0 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
+    <div class="sidebox"><b><span class="dot"></span>نسخه 0.5.1 بدون AI</b><p>موضوعات را یکجا بده، موتور جستجو، Resolve، Rule Engine، Deduplicate و Pack را انجام می‌دهد. هیچ LLM در مسیر تولید نیست.</p></div>
   </aside>
 
   <main class="main">
@@ -156,7 +156,7 @@ const TYPES = ["text","image","video","podcast","music"];
 const TYPE_LABEL = {text:"متن",image:"عکس",video:"ویدیو",podcast:"پادکست",music:"موسیقی"};
 const state = {
   running:false,cancelled:false,topics:[],accepted:[],rejected:[],review:[],
-  duplicates:0,errors:0,seen:new Set(),topicStats:{},sources:[]
+  duplicates:0,errors:0,providerWarnings:0,seen:new Set(),topicStats:{},sources:[]
 };
 
 document.querySelectorAll(".nav button").forEach(function(btn){
@@ -237,7 +237,7 @@ function renderTopicRows(){
 function esc(s){return String(s||"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function resetBatch(){
   if(state.running)return;
-  state.topics=[];state.accepted=[];state.rejected=[];state.review=[];state.duplicates=0;state.errors=0;state.seen=new Set();state.topicStats={};
+  state.topics=[];state.accepted=[];state.rejected=[];state.review=[];state.duplicates=0;state.errors=0;state.providerWarnings=0;state.seen=new Set();state.topicStats={};
   document.getElementById("batchProgress").style.width="0%";document.getElementById("jobState").textContent="Idle";setStatus("نتایج پاک شد.");packStatus("هنوز Pack ساخته نشده.");updateStats();renderTopicRows();
 }
 
@@ -267,7 +267,7 @@ async function startBatch(){
   }
   Object.keys(state.topicStats).forEach(function(k){if(state.topicStats[k].status!=="done")state.topicStats[k].status="done"});
   state.running=false;document.getElementById("startBatchBtn").disabled=false;document.getElementById("cancelBatchBtn").disabled=true;document.getElementById("jobState").textContent=state.cancelled?"Stopped":"Done";
-  setStatus(state.cancelled?"Batch متوقف شد. نتایج فعلی قابل دانلودند.":"Batch تمام شد. "+state.accepted.length+" Vibe کامل آماده Pack است.");
+  setStatus(state.cancelled?"Batch متوقف شد. نتایج فعلی قابل دانلودند.":"Batch تمام شد. "+state.accepted.length+" Vibe کامل آماده Pack است. "+(state.providerWarnings?("هشدار منبع: "+state.providerWarnings):""));
   renderTopicRows();updateStats();
 }
 
@@ -280,7 +280,10 @@ async function processTask(task){
   const searchLimit=Math.min(100,Math.max(task.want*4,12));
   const url="/api/search?type="+encodeURIComponent(task.type)+"&source=all&q="+encodeURIComponent(task.topic)+"&limit="+searchLimit+"&safe="+safe;
   const data=await apiJson(url);
-  if((data.providers||[]).some(function(p){return !p.ok}))state.errors+=(data.providers||[]).filter(function(p){return !p.ok}).length;
+  const providerFailures=(data.providers||[]).filter(function(p){return !p.ok});
+  if(providerFailures.length){
+    state.providerWarnings=(state.providerWarnings||0)+providerFailures.length;
+  }
   let got=0;
   for(const item of (data.items||[])){
     if(state.cancelled||got>=task.want)break;
@@ -288,7 +291,7 @@ async function processTask(task){
     if(state.seen.has(dedupe)){state.duplicates++;continue}
     state.seen.add(dedupe);
     try{
-      const rr=await apiJson("/api/resolve",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({item:item})});
+      const rr=await apiJson("/api/resolve",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(item)});
       const resolved=rr.item||item;
       if(strictLanguage&&resolved.language&&langNorm(resolved.language)!==langNorm(learning)){state.rejected.push({topic:task.topic,reason:"language",item:resolved});continue}
       const pr=await apiJson("/api/prepare",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({item:resolved,learning_language:learning,ui_language:ui})});
@@ -317,10 +320,10 @@ function cleanRecord(x){
 }
 function resultsPayload(){
   return {
-    engine_version:"0.5.0",
+    engine_version:"0.5.1",
     created_at:new Date().toISOString(),
     config:{learning_language:document.getElementById("learningLanguage").value,ui_language:document.getElementById("uiLanguage").value,counts:countsConfig(),topics:state.topics},
-    counts:{accepted:state.accepted.length,rejected:state.rejected.length,review:state.review.length,duplicates:state.duplicates,errors:state.errors},
+    counts:{accepted:state.accepted.length,rejected:state.rejected.length,review:state.review.length,duplicates:state.duplicates,errors:state.errors,provider_warnings:state.providerWarnings||0},
     items:state.accepted.map(cleanRecord)
   };
 }
@@ -338,7 +341,7 @@ async function buildPack(filterType){
   const label=filterType?TYPE_LABEL[filterType]:"کامل";
   packStatus("در حال ساخت Pack "+label+" — 0 / "+items.length);
   const entries=[];
-  const report={engine_version:"0.5.0",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[]};
+  const report={engine_version:"0.5.1",created_at:new Date().toISOString(),filter_type:filterType||"all",items:items.length,media_download_errors:[]};
   const licenses={};
   const manifest=resultsPayload();manifest.items=items.map(cleanRecord);
   entries.push({path:"manifest.json",data:jsonBytes(manifest)});
