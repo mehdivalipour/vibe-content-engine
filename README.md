@@ -241,7 +241,7 @@ Pack کامل برای Batchهای خیلی بزرگ ممکن است سنگین 
 - Object URL قبلی هنگام Reset آزاد می شود.
 
 
-## v0.6.1 — Topic Universe v1
+## v0.6.2 — Topic Universe v1
 
 - فایل `public/topic-universe-v1.json` با 1800 Seed اضافه شد.
 - 800 موضوع Interest: دقیقاً 100 موضوع برای هر یک از 8 Interest رسمی Planning.
@@ -256,7 +256,7 @@ Pack کامل برای Batchهای خیلی بزرگ ممکن است سنگین 
 - Character affinity فعلاً خالی است و بعد از دریافت Profile کاراکترها پر می شود؛ fixed bindings بعداً باید حفظ شوند و generic content در Publish Queue match شود.
 
 
-## v0.6.1 — پوشش واقعی پنج نوع محتوا
+## v0.6.2 — پوشش واقعی پنج نوع محتوا
 
 - Wikipedia به‌عنوان منبع Text با CC BY-SA 4.0 و وضعیت Review اضافه شد تا Topicهای عمومی پوشش بهتری داشته باشند.
 - Navigation entryهای Project Gutenberg مثل Authors/Subjects دیگر به‌عنوان متن واقعی قبول نمی‌شوند.
@@ -267,3 +267,18 @@ Pack کامل برای Batchهای خیلی بزرگ ممکن است سنگین 
 - Text کوتاه‌تر از 35 واژه به‌عنوان محتوای ضعیف رد می‌شود.
 - UI دلیل ردها و تعداد Accepted هر Content Type را در پایان Batch نشان می‌دهد.
 - نمایش got / wanted در جدول با جهت LTR اصلاح شد تا در RTL عدد 0/10 برعکس دیده نشود.
+
+
+## v0.6.2 — جلوگیری از گیر کردن Safari هنگام ساخت Pack
+
+- ساخت ZIP در مرورگر دیگر روی یک فایل WebM/MP4/MP3 بزرگ بی‌نهایت منتظر نمی‌ماند.
+- هر دانلود مدیا 25 ثانیه timeout دارد.
+- سقف فایل در Browser Pack:
+  - Image: 15 MB
+  - Video: 40 MB
+  - Podcast/Music: 25 MB
+  - Subtitle: 2 MB
+- سقف کل مدیای داخل یک ZIP مرورگری 250 MB است.
+- فایل‌های بزرگ یا timeout شده حذف نمی‌شوند؛ URL و دلیل Skip در report.json باقی می‌ماند.
+- Worker proxy با Content-Length فایل‌های بزرگ را زودتر با 413 رد می‌کند تا Safari کل فایل را دریافت نکند.
+- برای کتابخانه‌های چند هزار Vibe، مرحله بعدی معماری باید Background/R2 Pack Builder باشد؛ Browser ZIP فقط ابزار Batch کوچک و متوسط است.
