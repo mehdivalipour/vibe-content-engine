@@ -282,3 +282,41 @@ Pack کامل برای Batchهای خیلی بزرگ ممکن است سنگین 
 - فایل‌های بزرگ یا timeout شده حذف نمی‌شوند؛ URL و دلیل Skip در report.json باقی می‌ماند.
 - Worker proxy با Content-Length فایل‌های بزرگ را زودتر با 413 رد می‌کند تا Safari کل فایل را دریافت نکند.
 - برای کتابخانه‌های چند هزار Vibe، مرحله بعدی معماری باید Background/R2 Pack Builder باشد؛ Browser ZIP فقط ابزار Batch کوچک و متوسط است.
+
+
+## v0.7.0 — Quality First + Human Review Gallery
+
+نسخه 0.7 مسیر تولید را از «دانلود مستقیم هر نتیجه» به «Candidate → Human Review → Approved Pack» تغییر می‌دهد.
+
+### منابع تصویری جدید بدون API Key
+- The Metropolitan Museum of Art — فقط isPublicDomain + has image
+- Cleveland Museum of Art — Open Access / CC0
+- Art Institute of Chicago — فقط is_public_domain=true + IIIF
+
+### Quality First
+- حالت Curated به‌صورت پیش‌فرض روشن است.
+- Wikimedia در حالت Curated فقط فایل‌هایی را می‌پذیرد که Categoryهای Featured Pictures / Quality Images / Featured Media داشته باشند.
+- Candidateها براساس Source Tier، Curated بودن، Metadata و کیفیت اولیه Score می‌گیرند.
+- Tier A: Met / Cleveland / ArtIC / Smithsonian / Pixabay / NASA
+- Tier B: Wikimedia / Gutenberg / Wikisource / Wikipedia / LibriVox
+- Tier C: منابع عمومی‌تر مانند Internet Archive
+
+### Safety
+- Safety rule فقط obvious flags را پیدا می‌کند و جای moderation واقعی را نمی‌گیرد.
+- sexual / graphic violence به‌صورت خودکار Block می‌شود.
+- nudity / self-harm / drug-related metadata Flag می‌شود.
+- همه Candidateهای Pilot همچنان Human Review Required هستند.
+
+### Review Gallery
+- Preview تصویر، ویدیو، صوت و متن
+- نمایش Source، License، Quality Score و Safety Flag
+- Approve / Reject انسانی
+- فقط Approvedها وارد JSON و ZIP نهایی می‌شوند.
+- Review Queue تا 300 Candidate آخر و 100 Approved آخر در localStorage مرورگر نگه داشته می‌شود.
+
+### Pilot 45
+- لیست کاراکترها را خط‌به‌خط وارد کن.
+- Target پیش‌فرض 3 محتوا برای هر کاراکتر است.
+- برای 15 کاراکتر، Target خودکار 45 می‌شود.
+- محتوای Approved را می‌توان دستی به کاراکتر وصل کرد یا با «تخصیص متعادل» بین کاراکترها پخش کرد.
+- Character Affinity واقعی هنوز مرحله بعد است؛ این نسخه فقط Pilot assignment است.
